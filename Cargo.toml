@@ -1,0 +1,60 @@
+[package]
+authors = ["Godmode Galactus <gmgalactus@mango.markets>", "Maximilian Schneider <max@mango.markets>"]
+edition = "2021"
+name = "solana-bench-mango"
+version = "1.10.26"
+repository = "https://github.com/solana-labs/solana"
+license = "Apache-2.0"
+homepage = "https://solana.com/"
+publish = false
+
+[dependencies]
+borsh = "0.9.3"
+chrono = "0.4.19"
+clap = "2.33.1"
+crossbeam-channel = "0.5"
+fixed = { version = ">=1.11.0, <1.12.0", features = ["serde"] }
+fixed-macro = "^1.1.1"
+multiqueue = "^0.3.2"
+log = "0.4.14"
+rand = ">=0.8.5"
+rayon = "1.5.1"
+serde = "1.0.136"
+serde_derive = "1.0.103"
+serde_json = "1.0.79"
+serde_yaml = "0.8.23"
+mango = { path = "deps/mango-v3/program", default-features = false, features = ["no-entrypoint"] }
+mango-common = { path = "deps/mango-v3/common" }
+solana-bench-tps = { path = "deps/solana/bench-tps" }
+solana-clap-utils = { path = "deps/solana/clap-utils" }
+solana-cli-config = { path = "deps/solana/cli-config" }
+solana-client = { path = "deps/solana/client" }
+solana-core = { path = "deps/solana/core" }
+solana-faucet = { path = "deps/solana/faucet" }
+solana-genesis = { path = "deps/solana/genesis" }
+solana-gossip = { path = "deps/solana/gossip" }
+solana-logger = { path = "deps/solana/logger" }
+solana-measure = { path = "deps/solana/measure" }
+solana-metrics = { path = "deps/solana/metrics" }
+solana-net-utils = { path = "deps/solana/net-utils" }
+solana-rpc = { path = "deps/solana/rpc" }
+solana-runtime = { path = "deps/solana/runtime" }
+solana-sdk = { path = "deps/solana/sdk" }
+solana-streamer = { path = "deps/solana/streamer" }
+solana-transaction-status = { path = "deps/solana/transaction-status" }
+solana-version = { path = "deps/solana/version" }
+thiserror = "1.0"
+solana-program = ">=1.9.0"
+
+[dev-dependencies]
+serial_test = "0.6.0"
+solana-local-cluster = { path = "deps/solana/local-cluster" }
+solana-test-validator = { path = "deps/solana/test-validator" }
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+exclude = [
+    "deps/solana",
+    "deps/mango-v3",
+]

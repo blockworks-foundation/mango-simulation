@@ -1,0 +1,7 @@
+[submodule "deps/mango-v3"]
+	path = deps/mango-v3
+	url = https://github.com/blockworks-foundation/mango-v3
+[submodule "deps/solana"]
+	path = deps/solana
+	url = https://github.com/solana-labs/solana
+	branch = v1.10.26
