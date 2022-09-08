@@ -8,7 +8,10 @@ use mango::{
 };
 use mango_common::Loadable;
 use rayon::ThreadBuilder;
+use serde::Serialize;
 use serde_json;
+mod rotating_queue;
+use rotating_queue::RotatingQueue;
 
 use solana_bench_mango::{
     cli,
@@ -30,23 +33,26 @@ use solana_sdk::{
     stake::instruction,
     transaction::Transaction,
 };
-use solana_transaction_status::{TransactionDetails, UiTransactionEncoding, EncodedConfirmedBlock};
+use solana_transaction_status::{EncodedConfirmedBlock, TransactionDetails, UiTransactionEncoding};
 
 use core::time;
 use std::{
+    cell::Ref,
     collections::HashMap,
-    collections::{VecDeque, HashSet},
+    collections::{HashSet, VecDeque},
     fs,
     ops::{Div, Mul},
     str::FromStr,
     sync::{
-        atomic::{AtomicBool, Ordering, AtomicU64},
-        mpsc::{channel, Sender, TryRecvError, Receiver},
+        atomic::{AtomicBool, AtomicU64, Ordering},
+        mpsc::{channel, Receiver, Sender, TryRecvError},
         Arc, RwLock,
     },
     thread::{sleep, Builder, JoinHandle},
-    time::{Duration, Instant}, cell::Ref,
+    time::{Duration, Instant},
 };
+
+use csv;
 
 fn load_from_rpc<T: Loadable>(rpc_client: &RpcClient, pk: &Pubkey) -> T {
     let acc = rpc_client.get_account(pk).unwrap();
@@ -82,7 +88,7 @@ fn get_new_latest_blockhash(client: &Arc<RpcClient>, blockhash: &Hash) -> Option
     None
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 struct TransactionSendRecord {
     pub signature: Signature,
     pub sent_at: DateTime<Utc>,
@@ -91,7 +97,7 @@ struct TransactionSendRecord {
     pub market: Pubkey,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 struct TransactionConfirmRecord {
     pub signature: Signature,
     pub sent_slot: Slot,
@@ -120,45 +126,16 @@ struct PerpMarketCache {
 }
 
 struct TransactionInfo {
-    pub signature : Signature,
-    pub transactionSendTime : DateTime<Utc>,
-    pub send_slot : Slot,
-    pub confirmationRetries : u32,
+    pub signature: Signature,
+    pub transactionSendTime: DateTime<Utc>,
+    pub send_slot: Slot,
+    pub confirmationRetries: u32,
     pub error: String,
-    pub confirmationBlockHash : Pubkey,
+    pub confirmationBlockHash: Pubkey,
     pub leaderConfirmingTransaction: Pubkey,
-    pub timeout : bool,
+    pub timeout: bool,
     pub market_maker: Pubkey,
     pub market: Pubkey,
-} 
-
-struct RotatingQueue<T> {
-    deque: Arc<RwLock<VecDeque<T>>>,
-}
-
-impl<T: Clone> RotatingQueue<T> {
-    pub fn new<F>(size: usize, creator_functor: F) -> Self
-    where
-        F: Fn() -> T,
-    {
-        let item = Self {
-            deque: Arc::new(RwLock::new(VecDeque::<T>::new())),
-        };
-        {
-            let mut deque = item.deque.write().unwrap();
-            for _i in 0..size {
-                deque.push_back(creator_functor());
-            }
-        }
-        item
-    }
-
-    pub fn get(&self) -> T {
-        let mut deque = self.deque.write().unwrap();
-        let current = deque.pop_front().unwrap();
-        deque.push_back(current.clone());
-        current
-    }
 }
 
 fn poll_blockhash_and_slot(
@@ -318,16 +295,18 @@ fn send_mm_transactions(
             }
             let tpu_client = tpu_client_pool.get();
             tpu_client.send_transaction(&tx);
-            let sent = tx_record_sx
-                .send(TransactionSendRecord {
-                    signature: tx.signatures[0],
-                    sent_at: Utc::now(),
-                    sent_slot : slot.load(Ordering::Acquire),
-                    market_maker: mango_account_signer.pubkey(),
-                    market: c.perp_market_pk,
-                });
+            let sent = tx_record_sx.send(TransactionSendRecord {
+                signature: tx.signatures[0],
+                sent_at: Utc::now(),
+                sent_slot: slot.load(Ordering::Acquire),
+                market_maker: mango_account_signer.pubkey(),
+                market: c.perp_market_pk,
+            });
             if sent.is_err() {
-                println!("sending error on channel : {}", sent.err().unwrap().to_string() );
+                println!(
+                    "sending error on channel : {}",
+                    sent.err().unwrap().to_string()
+                );
             }
         }
     }
@@ -406,17 +385,16 @@ fn process_signature_confirmation_batch(
 }
 
 fn confirmation_by_querying_rpc(
-    recv_limit : usize,
-    rpc_client : Arc<RpcClient>,
+    recv_limit: usize,
+    rpc_client: Arc<RpcClient>,
     tx_record_rx: &Receiver<TransactionSendRecord>,
-    tx_confirm_records : Arc<RwLock<Vec<TransactionConfirmRecord>>>,
+    tx_confirm_records: Arc<RwLock<Vec<TransactionConfirmRecord>>>,
     tx_timeout_records: Arc<RwLock<Vec<TransactionSendRecord>>>,
 ) {
     const TIMEOUT: u64 = 30;
     let mut error: bool = false;
     let mut recv_until_confirm = recv_limit;
-    let not_confirmed: Arc<RwLock<Vec<TransactionSendRecord>>> =
-        Arc::new(RwLock::new(Vec::new()));
+    let not_confirmed: Arc<RwLock<Vec<TransactionSendRecord>>> = Arc::new(RwLock::new(Vec::new()));
     loop {
         let has_signatures_to_confirm = { not_confirmed.read().unwrap().len() > 0 };
         if has_signatures_to_confirm {
@@ -511,16 +489,28 @@ fn confirmation_by_querying_rpc(
     }
 }
 
+struct BlockData {
+    pub block_hash: Pubkey,
+    pub block_slot: Slot,
+    pub block_leader: Pubkey,
+    pub total_transactions: u64,
+    pub number_of_mm_transactions: u64,
+    pub block_time: u64,
+}
+
 fn confirmations_by_blocks(
-    clients: RotatingQueue<Arc<RpcClient>>, 
+    clients: RotatingQueue<Arc<RpcClient>>,
     current_slot: &AtomicU64,
-    recv_limit : usize,
+    recv_limit: usize,
     tx_record_rx: Receiver<TransactionSendRecord>,
-    tx_confirm_records : Arc<RwLock<Vec<TransactionConfirmRecord>>>,
+    tx_confirm_records: Arc<RwLock<Vec<TransactionConfirmRecord>>>,
     tx_timeout_records: Arc<RwLock<Vec<TransactionSendRecord>>>,
+    tx_block_data: Arc<RwLock<Vec<BlockData>>>,
 ) {
     let mut recv_until_confirm = recv_limit;
-    let transaction_map = Arc::new(RwLock::new(HashMap::<Signature, TransactionSendRecord>::new()));
+    let transaction_map = Arc::new(RwLock::new(
+        HashMap::<Signature, TransactionSendRecord>::new(),
+    ));
     let last_slot = current_slot.load(Ordering::Acquire);
 
     while recv_until_confirm != 0 {
@@ -533,7 +523,7 @@ fn confirmations_by_blocks(
                     tx_record.signature
                 );
                 transaction_map.insert(tx_record.signature, tx_record);
-                recv_until_confirm-=1;
+                recv_until_confirm -= 1;
             }
             Err(TryRecvError::Empty) => {
                 debug!("channel emptied");
@@ -550,84 +540,143 @@ fn confirmations_by_blocks(
     }
     println!("finished mapping all the trasactions");
     sleep(Duration::from_secs(40));
-    let commitment_confirmation = CommitmentConfig{commitment:CommitmentLevel::Confirmed};
-    let block_res = clients.get().get_blocks_with_commitment(last_slot, None, commitment_confirmation).unwrap();
+    let commitment_confirmation = CommitmentConfig {
+        commitment: CommitmentLevel::Confirmed,
+    };
+    let block_res = clients
+        .get()
+        .get_blocks_with_commitment(last_slot, None, commitment_confirmation)
+        .unwrap();
 
     let nb_blocks = block_res.len();
-    let nb_thread:usize = 16;
+    let nb_thread: usize = 16;
     println!("processing {} blocks", nb_blocks);
 
     let mut join_handles = Vec::new();
-    for slot_batch in block_res.chunks( if nb_blocks > nb_thread {nb_blocks.div(nb_thread)} else {nb_blocks} ).map(|x| x.to_vec()) {
+    for slot_batch in block_res
+        .chunks(if nb_blocks > nb_thread {
+            nb_blocks.div(nb_thread)
+        } else {
+            nb_blocks
+        })
+        .map(|x| x.to_vec())
+    {
         let map = transaction_map.clone();
         let client = clients.get().clone();
         let tx_confirm_records = tx_confirm_records.clone();
+        let tx_block_data = tx_block_data.clone();
         let joinble = Builder::new()
-        .name("getting blocks and searching transactions".to_string())
-        .spawn( move || {
-            for slot in slot_batch {
-                let block = client.get_block_with_config(slot, RpcBlockConfig { encoding: None, transaction_details: None, rewards: None, commitment: Some(commitment_confirmation), max_supported_transaction_version: None }).unwrap();
-                let rewards = &block.rewards.unwrap();
-                if let Some(transactions) =  block.transactions {
-                    println!("block {} at slot {} contains {} transactions", block.blockhash, block.block_height.unwrap(), transactions.len());
-                    for solana_transaction_status::EncodedTransactionWithStatusMeta {
-                        transaction,
-                        meta,
-                        version,
-                    } in transactions {
-                        if let solana_transaction_status::EncodedTransaction::Json(transaction) = transaction {
-                            transaction.message;
-                            for signature in transaction.signatures {
-                                let signature = Signature::from_str(&signature).unwrap();
-                                let transaction_record_op = { 
-                                    let map = map.read().unwrap();
-                                    let rec = map.get(&signature);
-                                    match rec {
-                                        Some(x)=> Some(x.clone()),
-                                        None => None,
+            .name("getting blocks and searching transactions".to_string())
+            .spawn(move || {
+                for slot in slot_batch {
+                    let block = client
+                        .get_block_with_config(
+                            slot,
+                            RpcBlockConfig {
+                                encoding: None,
+                                transaction_details: None,
+                                rewards: None,
+                                commitment: Some(commitment_confirmation),
+                                max_supported_transaction_version: None,
+                            },
+                        )
+                        .unwrap();
+                    let mut mm_transaction_count: u64 = 0;
+                    let rewards = &block.rewards.unwrap();
+                    let slot_leader = Pubkey::from_str(
+                        rewards
+                            .iter()
+                            .find(|r| r.reward_type == Some(RewardType::Fee))
+                            .unwrap()
+                            .pubkey
+                            .as_str(),
+                    )
+                    .unwrap();
+
+                    if let Some(transactions) = block.transactions {
+                        let nb_transactions = transactions.len();
+                        println!(
+                            "block {} at slot {} contains {} transactions",
+                            block.blockhash,
+                            block.block_height.unwrap(),
+                            nb_transactions
+                        );
+                        for solana_transaction_status::EncodedTransactionWithStatusMeta {
+                            transaction,
+                            meta,
+                            version,
+                        } in transactions
+                        {
+                            if let solana_transaction_status::EncodedTransaction::Json(
+                                transaction,
+                            ) = transaction
+                            {
+                                for signature in transaction.signatures {
+                                    let signature = Signature::from_str(&signature).unwrap();
+                                    let transaction_record_op = {
+                                        let map = map.read().unwrap();
+                                        let rec = map.get(&signature);
+                                        match rec {
+                                            Some(x) => Some(x.clone()),
+                                            None => None,
+                                        }
+                                    };
+                                    if let Some(transaction_record) = transaction_record_op {
+                                        let mut lock = tx_confirm_records.write().unwrap();
+                                        mm_transaction_count += 1;
+
+                                        (*lock).push(TransactionConfirmRecord {
+                                            signature: transaction_record.signature,
+                                            confirmed_slot: slot, // TODO: should be changed to correct slot
+                                            confirmed_at: Utc::now(),
+                                            sent_at: transaction_record.sent_at,
+                                            sent_slot: transaction_record.sent_slot,
+                                            successful: if let Some(meta) = &meta {
+                                                meta.status.is_ok()
+                                            } else {
+                                                false
+                                            },
+                                            error: if let Some(meta) = &meta {
+                                                match &meta.err {
+                                                    Some(x) => Some(x.to_string()),
+                                                    None => None,
+                                                }
+                                            } else {
+                                                None
+                                            },
+                                            block_hash: Pubkey::from_str(block.blockhash.as_str())
+                                                .unwrap(),
+                                            market: transaction_record.market,
+                                            market_maker: transaction_record.market_maker,
+                                            slot_processed: slot,
+                                            slot_leader: slot_leader,
+                                        })
                                     }
-                                };
-                                if let Some(transaction_record) = transaction_record_op {
-                                    let mut lock = tx_confirm_records.write().unwrap();
-                                    
-                                    (*lock).push(TransactionConfirmRecord{
-                                        signature: transaction_record.signature,
-                                        confirmed_slot: slot, // TODO: should be changed to correct slot
-                                        confirmed_at: Utc::now(),
-                                        sent_at: transaction_record.sent_at,
-                                        sent_slot: transaction_record.sent_slot,
-                                        successful: if let Some(meta) = &meta {
-                                            meta.status.is_ok()
-                                        } else {
-                                            false
-                                        },
-                                        error: if let Some(meta) = &meta { 
-                                            match &meta.err {
-                                                Some(x) => Some(x.to_string()),
-                                                None => None,
-                                            }
-                                        } else {
-                                            None
-                                        },
-                                        block_hash: Pubkey::from_str(block.blockhash.as_str()).unwrap(),
-                                        market: transaction_record.market,
-                                        market_maker: transaction_record.market_maker,
-                                        slot_processed: slot,
-                                        slot_leader: Pubkey::from_str(rewards.iter()
-                                            .find(|r| r.reward_type == Some(RewardType::Fee))
-                                            .unwrap()
-                                            .pubkey.as_str()).unwrap(),
 
-                                    })
+                                    map.write().unwrap().remove(&signature);
                                 }
-
-                                map.write().unwrap().remove(&signature);
                             }
+                        }
+                        // push block data
+                        {
+                            let mut blockstats_writer = tx_block_data.write().unwrap();
+                            blockstats_writer.push(BlockData {
+                                block_hash: Pubkey::from_str(block.blockhash.as_str()).unwrap(),
+                                block_leader: slot_leader,
+                                block_slot: slot,
+                                block_time: if let Some(time) = block.block_time {
+                                    time as u64
+                                } else {
+                                    0
+                                },
+                                number_of_mm_transactions: mm_transaction_count,
+                                total_transactions: nb_transactions as u64,
+                            })
                         }
                     }
                 }
-            }
-        }).unwrap();
+            })
+            .unwrap();
         join_handles.push(joinble);
     }
     for handle in join_handles {
@@ -638,7 +687,29 @@ fn confirmations_by_blocks(
     for x in transaction_map.read().unwrap().iter() {
         timeout_writer.push(x.1.clone())
     }
-    
+}
+
+fn write_transaction_data_into_csv(
+    transaction_save_file: String,
+    tx_confirm_records: Arc<RwLock<Vec<TransactionConfirmRecord>>>,
+    tx_timeout_records: Arc<RwLock<Vec<TransactionSendRecord>>>,
+) {
+    if transaction_save_file.is_empty() {
+        return;
+    }
+    let mut writer = csv::Writer::from_path(transaction_save_file).unwrap();
+    {
+        let rd_lock = tx_confirm_records.read().unwrap();
+        for confirm_record in rd_lock.iter() {
+            writer.serialize(confirm_record).unwrap();
+        }
+
+        let timeout_lk = tx_timeout_records.read().unwrap();
+        for timeout_record in timeout_lk.iter() {
+            writer.serialize(timeout_record).unwrap();
+        }
+    }
+    writer.flush().unwrap();
 }
 
 fn main() {
@@ -660,6 +731,8 @@ fn main() {
         ..
     } = &cli_config;
 
+    let transaction_save_file = transaction_save_file.clone();
+
     info!("Connecting to the cluster");
 
     let account_keys_json = fs::read_to_string(account_keys).expect("unable to read accounts file");
@@ -678,13 +751,12 @@ fn main() {
         .unwrap();
 
     let number_of_tpu_clients: usize = 2 * (*quotes_per_second as usize);
-    let rpc_clients =
-        RotatingQueue::<Arc<RpcClient>>::new(number_of_tpu_clients, || {
-            Arc::new(RpcClient::new_with_commitment(
-                json_rpc_url.to_string(),
-                CommitmentConfig::confirmed(),
-            ))
-        });
+    let rpc_clients = RotatingQueue::<Arc<RpcClient>>::new(number_of_tpu_clients, || {
+        Arc::new(RpcClient::new_with_commitment(
+            json_rpc_url.to_string(),
+            CommitmentConfig::confirmed(),
+        ))
+    });
 
     let tpu_client_pool = Arc::new(RotatingQueue::<Arc<TpuClient>>::new(
         number_of_tpu_clients,
@@ -729,7 +801,13 @@ fn main() {
         Builder::new()
             .name("solana-blockhash-poller".to_string())
             .spawn(move || {
-                poll_blockhash_and_slot(&exit_signal, blockhash.clone(), current_slot.as_ref(), &client, &id);
+                poll_blockhash_and_slot(
+                    &exit_signal,
+                    blockhash.clone(),
+                    current_slot.as_ref(),
+                    &client,
+                    &id,
+                );
             })
             .unwrap()
     };
@@ -848,16 +926,26 @@ fn main() {
     let tx_timeout_records: Arc<RwLock<Vec<TransactionSendRecord>>> =
         Arc::new(RwLock::new(Vec::new()));
 
+    let tx_block_data = Arc::new(RwLock::new(Vec::<BlockData>::new()));
+
     let confirmation_thread = Builder::new()
         .name("solana-client-sender".to_string())
         .spawn(move || {
             let recv_limit = account_keys_parsed.len()
-                                        * perp_market_caches.len()
-                                        * duration.as_secs() as usize
-                                        * quotes_per_second as usize;
+                * perp_market_caches.len()
+                * duration.as_secs() as usize
+                * quotes_per_second as usize;
 
             //confirmation_by_querying_rpc(recv_limit, rpc_client.clone(), &tx_record_rx, tx_confirm_records.clone(), tx_timeout_records.clone());
-            confirmations_by_blocks(rpc_clients, &current_slot, recv_limit, tx_record_rx, tx_confirm_records.clone(), tx_timeout_records.clone());
+            confirmations_by_blocks(
+                rpc_clients,
+                &current_slot,
+                recv_limit,
+                tx_record_rx,
+                tx_confirm_records.clone(),
+                tx_timeout_records.clone(),
+                tx_block_data.clone(),
+            );
 
             let confirmed: Vec<TransactionConfirmRecord> = {
                 let lock = tx_confirm_records.write().unwrap();
@@ -904,6 +992,12 @@ fn main() {
                 confirmation_times.first().unwrap(),
                 confirmation_times.last().unwrap(),
                 confirmation_times[confirmation_times.len() / 2]
+            );
+
+            write_transaction_data_into_csv(
+                transaction_save_file,
+                tx_confirm_records,
+                tx_timeout_records,
             );
         })
         .unwrap();

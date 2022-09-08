@@ -45,6 +45,7 @@ solana-transaction-status = { path = "deps/solana/transaction-status" }
 solana-version = { path = "deps/solana/version" }
 thiserror = "1.0"
 solana-program = ">=1.9.0"
+csv = "1.0.0"
 
 [dev-dependencies]
 serial_test = "0.6.0"
