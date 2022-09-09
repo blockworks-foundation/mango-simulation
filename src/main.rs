@@ -99,18 +99,19 @@ struct TransactionSendRecord {
 
 #[derive(Clone, Serialize)]
 struct TransactionConfirmRecord {
-    pub signature: Signature,
+    pub signature: String,
     pub sent_slot: Slot,
-    pub sent_at: DateTime<Utc>,
+    pub sent_at: String,
     pub confirmed_slot: Slot,
-    pub confirmed_at: DateTime<Utc>,
+    pub confirmed_at: String,
     pub successful: bool,
-    pub slot_leader: Pubkey,
-    pub error: Option<String>,
-    pub market_maker: Pubkey,
-    pub market: Pubkey,
-    pub block_hash: Pubkey,
+    pub slot_leader: String,
+    pub error: String,
+    pub market_maker: String,
+    pub market: String,
+    pub block_hash: String,
     pub slot_processed: Slot,
+    pub timed_out: bool,
 }
 
 #[derive(Clone)]
@@ -333,25 +334,22 @@ fn process_signature_confirmation_batch(
                         } else {
                             let mut lock = confirmed.write().unwrap();
                             (*lock).push(TransactionConfirmRecord {
-                                signature: tx_record.signature,
+                                signature: tx_record.signature.to_string(),
                                 sent_slot: tx_record.sent_slot,
-                                sent_at: tx_record.sent_at,
-                                confirmed_at: Utc::now(),
+                                sent_at: tx_record.sent_at.to_string(),
+                                confirmed_at: Utc::now().to_string(),
                                 confirmed_slot: s.slot,
                                 successful: s.err.is_none(),
-                                error: s.err.as_ref().map(|e| {
-                                    let err_msg = e.to_string();
-                                    debug!(
-                                        "tx {} returned an error {}",
-                                        tx_record.signature, err_msg,
-                                    );
-                                    err_msg
-                                }),
-                                block_hash: Pubkey::default(),
-                                slot_leader: Pubkey::default(),
-                                market: tx_record.market,
-                                market_maker: tx_record.market_maker,
+                                error: match &s.err {
+                                    Some(e) => e.to_string(),
+                                    None=> "".to_string(),
+                                },
+                                block_hash: Pubkey::default().to_string(),
+                                slot_leader: Pubkey::default().to_string(),
+                                market: tx_record.market.to_string(),
+                                market_maker: tx_record.market_maker.to_string(),
                                 slot_processed: tx_record.sent_slot,
+                                timed_out: false,
                             });
 
                             debug!(
@@ -583,15 +581,12 @@ fn confirmations_by_blocks(
                         .unwrap();
                     let mut mm_transaction_count: u64 = 0;
                     let rewards = &block.rewards.unwrap();
-                    let slot_leader = Pubkey::from_str(
-                        rewards
+                    let slot_leader = rewards
                             .iter()
                             .find(|r| r.reward_type == Some(RewardType::Fee))
                             .unwrap()
                             .pubkey
-                            .as_str(),
-                    )
-                    .unwrap();
+                            .to_string();
 
                     if let Some(transactions) = block.transactions {
                         let nb_transactions = transactions.len();
@@ -626,10 +621,10 @@ fn confirmations_by_blocks(
                                         mm_transaction_count += 1;
 
                                         (*lock).push(TransactionConfirmRecord {
-                                            signature: transaction_record.signature,
+                                            signature: transaction_record.signature.to_string(),
                                             confirmed_slot: slot, // TODO: should be changed to correct slot
-                                            confirmed_at: Utc::now(),
-                                            sent_at: transaction_record.sent_at,
+                                            confirmed_at: Utc::now().to_string(),
+                                            sent_at: transaction_record.sent_at.to_string(),
                                             sent_slot: transaction_record.sent_slot,
                                             successful: if let Some(meta) = &meta {
                                                 meta.status.is_ok()
@@ -638,18 +633,18 @@ fn confirmations_by_blocks(
                                             },
                                             error: if let Some(meta) = &meta {
                                                 match &meta.err {
-                                                    Some(x) => Some(x.to_string()),
-                                                    None => None,
+                                                    Some(x) => x.to_string(),
+                                                    None => "".to_string(),
                                                 }
                                             } else {
-                                                None
+                                                "".to_string()
                                             },
-                                            block_hash: Pubkey::from_str(block.blockhash.as_str())
-                                                .unwrap(),
-                                            market: transaction_record.market,
-                                            market_maker: transaction_record.market_maker,
+                                            block_hash: block.blockhash.clone(),
+                                            market: transaction_record.market.to_string(),
+                                            market_maker: transaction_record.market_maker.to_string(),
                                             slot_processed: slot,
-                                            slot_leader: slot_leader,
+                                            slot_leader: slot_leader.clone(),
+                                            timed_out: false,
                                         })
                                     }
 
@@ -662,7 +657,7 @@ fn confirmations_by_blocks(
                             let mut blockstats_writer = tx_block_data.write().unwrap();
                             blockstats_writer.push(BlockData {
                                 block_hash: Pubkey::from_str(block.blockhash.as_str()).unwrap(),
-                                block_leader: slot_leader,
+                                block_leader: Pubkey::from_str(slot_leader.as_str()).unwrap(),
                                 block_slot: slot,
                                 block_time: if let Some(time) = block.block_time {
                                     time as u64
@@ -706,7 +701,23 @@ fn write_transaction_data_into_csv(
 
         let timeout_lk = tx_timeout_records.read().unwrap();
         for timeout_record in timeout_lk.iter() {
-            writer.serialize(timeout_record).unwrap();
+            writer.serialize(
+                TransactionConfirmRecord{
+                    block_hash: "".to_string(),
+                    confirmed_at: "".to_string(),
+                    confirmed_slot: 0,
+                    error: "Timeout".to_string(),
+                    market: timeout_record.market.to_string(),
+                    market_maker: timeout_record.market_maker.to_string(),
+                    sent_at: timeout_record.sent_at.to_string(),
+                    sent_slot: timeout_record.sent_slot,
+                    signature: timeout_record.signature.to_string(),
+                    slot_leader: "".to_string(),
+                    slot_processed: 0,
+                    successful: false,
+                    timed_out: true,
+                }
+            ).unwrap();
         }
     }
     writer.flush().unwrap();
@@ -961,7 +972,7 @@ fn main() {
                 total_signed,
                 (confirmed.len() * 100) / total_signed
             );
-            let error_count = confirmed.iter().filter(|tx| tx.error.is_some()).count();
+            let error_count = confirmed.iter().filter(|tx| !tx.error.is_empty()).count();
             info!(
                 "errors counted {} rate {}%",
                 error_count,
@@ -978,21 +989,21 @@ fn main() {
                 (timeouts.len() * 100) / total_signed
             );
 
-            let mut confirmation_times = confirmed
-                .iter()
-                .map(|r| {
-                    r.confirmed_at
-                        .signed_duration_since(r.sent_at)
-                        .num_milliseconds()
-                })
-                .collect::<Vec<_>>();
-            confirmation_times.sort();
-            info!(
-                "confirmation times min={} max={} median={}",
-                confirmation_times.first().unwrap(),
-                confirmation_times.last().unwrap(),
-                confirmation_times[confirmation_times.len() / 2]
-            );
+            // let mut confirmation_times = confirmed
+            //     .iter()
+            //     .map(|r| {
+            //         r.confirmed_at
+            //             .signed_duration_since(r.sent_at)
+            //             .num_milliseconds()
+            //     })
+            //     .collect::<Vec<_>>();
+            // confirmation_times.sort();
+            // info!(
+            //     "confirmation times min={} max={} median={}",
+            //     confirmation_times.first().unwrap(),
+            //     confirmation_times.last().unwrap(),
+            //     confirmation_times[confirmation_times.len() / 2]
+            // );
 
             write_transaction_data_into_csv(
                 transaction_save_file,
