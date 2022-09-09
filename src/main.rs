@@ -567,7 +567,10 @@ fn confirmations_by_blocks(
             .name("getting blocks and searching transactions".to_string())
             .spawn(move || {
                 for slot in slot_batch {
-                    let block = client
+                    // retry search for block 10 times
+                    let mut block = None;
+                    for i in 0..=10 {
+                        let block_res = client
                         .get_block_with_config(
                             slot,
                             RpcBlockConfig {
@@ -577,16 +580,29 @@ fn confirmations_by_blocks(
                                 commitment: Some(commitment_confirmation),
                                 max_supported_transaction_version: None,
                             },
-                        )
-                        .unwrap();
+                        );
+
+                        match block_res {
+                            Ok(x) => {
+                                block = Some(x);
+                                break;
+                            },
+                            _=>{
+                                // do nothing
+                            }
+                        }
+                    }
+                    let block = block.unwrap();
+                        
                     let mut mm_transaction_count: u64 = 0;
                     let rewards = &block.rewards.unwrap();
-                    let slot_leader = rewards
+                    let slot_leader =  match rewards
                             .iter()
                             .find(|r| r.reward_type == Some(RewardType::Fee))
-                            .unwrap()
-                            .pubkey
-                            .to_string();
+                            {
+                                Some(x) => x.pubkey.clone(),
+                                None=> "".to_string(),
+                            };
 
                     if let Some(transactions) = block.transactions {
                         let nb_transactions = transactions.len();
