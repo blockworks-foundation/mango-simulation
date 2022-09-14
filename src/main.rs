@@ -21,6 +21,7 @@ use solana_client::{
     connection_cache::ConnectionCache, rpc_client::RpcClient, rpc_config::RpcBlockConfig,
     tpu_client::TpuClient,
 };
+use solana_program::native_token::LAMPORTS_PER_SOL;
 use solana_runtime::bank::RewardType;
 use solana_sdk::{
     clock::{Slot, DEFAULT_MS_PER_SLOT},
@@ -487,10 +488,11 @@ fn confirmation_by_querying_rpc(
     }
 }
 
+#[derive(Clone, Serialize)]
 struct BlockData {
-    pub block_hash: Pubkey,
+    pub block_hash: String,
     pub block_slot: Slot,
-    pub block_leader: Pubkey,
+    pub block_leader: String,
     pub total_transactions: u64,
     pub number_of_mm_transactions: u64,
     pub block_time: u64,
@@ -672,8 +674,8 @@ fn confirmations_by_blocks(
                         {
                             let mut blockstats_writer = tx_block_data.write().unwrap();
                             blockstats_writer.push(BlockData {
-                                block_hash: Pubkey::from_str(block.blockhash.as_str()).unwrap(),
-                                block_leader: Pubkey::from_str(slot_leader.as_str()).unwrap(),
+                                block_hash: block.blockhash,
+                                block_leader: slot_leader,
                                 block_slot: slot,
                                 block_time: if let Some(time) = block.block_time {
                                     time as u64
@@ -739,6 +741,24 @@ fn write_transaction_data_into_csv(
     writer.flush().unwrap();
 }
 
+
+fn write_block_data_into_csv(
+    block_data_csv: String,
+    tx_block_data: Arc<RwLock<Vec<BlockData>>>,
+) {
+    if block_data_csv.is_empty() {
+        return;
+    }
+    let mut writer = csv::Writer::from_path(block_data_csv).unwrap();
+    let data = tx_block_data.read().unwrap();
+
+    for d in data.iter().filter(|x| x.number_of_mm_transactions > 0) {
+        writer.serialize(d).unwrap();
+    }
+    writer.flush().unwrap();
+}
+
+
 fn main() {
     solana_logger::setup_with_default("solana=info");
     solana_metrics::set_panic_hook("bench-mango", /*version:*/ None);
@@ -755,10 +775,14 @@ fn main() {
         duration,
         quotes_per_second,
         transaction_save_file,
+        block_data_save_file,
+        airdrop_accounts,
         ..
     } = &cli_config;
 
     let transaction_save_file = transaction_save_file.clone();
+    let block_data_save_file = block_data_save_file.clone();
+    let airdrop_accounts = *airdrop_accounts;
 
     info!("Connecting to the cluster");
 
@@ -902,6 +926,21 @@ fn main() {
             let mango_account_signer =
                 Keypair::from_bytes(account_keys.secret_key.as_slice()).unwrap();
 
+            if airdrop_accounts {
+                println!("Transfering 1 SOL to {}", mango_account_signer.pubkey());
+                let inx = solana_sdk::system_instruction::transfer( &id.pubkey(), &mango_account_signer.pubkey(), LAMPORTS_PER_SOL);
+
+                let mut tx = Transaction::new_unsigned(Message::new(
+                    &[inx],
+                    Some(&id.pubkey()),
+                ));
+    
+                if let Ok(recent_blockhash) = blockhash.read() {
+                    tx.sign(&[id], *recent_blockhash);
+                }
+                rpc_client.send_and_confirm_transaction_with_spinner(&tx).unwrap();
+            }
+
             info!(
                 "wallet:{:?} https://testnet.mango.markets/account?pubkey={:?}",
                 mango_account_signer.pubkey(),
@@ -1025,6 +1064,11 @@ fn main() {
                 transaction_save_file,
                 tx_confirm_records,
                 tx_timeout_records,
+            );
+
+            write_block_data_into_csv(
+                block_data_save_file,
+                tx_block_data
             );
         })
         .unwrap();

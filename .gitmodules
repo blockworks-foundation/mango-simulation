@@ -4,4 +4,4 @@
 [submodule "deps/solana"]
 	path = deps/solana
 	url = https://github.com/solana-labs/solana
-	branch = v1.10.26
+	branch = v1.11.10

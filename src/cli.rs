@@ -17,6 +17,8 @@ pub struct Config {
     pub account_keys: String,
     pub mango_keys: String,
     pub transaction_save_file: String,
+    pub block_data_save_file: String,
+    pub airdrop_accounts: bool,
 }
 
 impl Default for Config {
@@ -31,6 +33,8 @@ impl Default for Config {
             account_keys: String::new(),
             mango_keys: String::new(),
             transaction_save_file : String::new(),
+            block_data_save_file : String::new(),
+            airdrop_accounts : false,
         }
     }
 }
@@ -137,6 +141,23 @@ pub fn build_args<'a, 'b>(version: &'b str) -> App<'a, 'b> {
             .required(false)
             .help("To save details of all transactions during a run")
         )
+        .arg(
+            Arg::with_name("block_data_save_file")
+            .short("bdsf")
+            .long("block_data_save_file")
+            .value_name("FILENAME")
+            .takes_value(true)
+            .required(false)
+            .help("To save details of all block containing mm transactions")
+        )
+        .arg(
+            Arg::with_name("airdrop_accounts")
+            .long("airdrop_accounts")
+            .value_name("BOOL")
+            .takes_value(false)
+            .required(false)
+            .help("Airdrop all MM accounts before stating")
+        )
 }
 
 /// Parses a clap `ArgMatches` structure into a `Config`
@@ -200,6 +221,12 @@ pub fn extract_args(matches: &ArgMatches) -> Config {
         Some(x) => x.to_string(),
         None => String::new(),
     };
-
+    args.block_data_save_file = match matches.value_of("block_data_save_file") {
+        Some(x) => x.to_string(),
+        None => String::new(),
+    };
+    
+    args.airdrop_accounts = matches.is_present("airdrop_accounts");
     args
+
 }
