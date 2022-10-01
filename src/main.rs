@@ -42,7 +42,7 @@ use std::{
     collections::HashMap,
     collections::{HashSet, VecDeque},
     fs,
-    ops::{Div, Mul},
+    ops::{Div, Mul, Add},
     str::FromStr,
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
@@ -496,6 +496,7 @@ struct BlockData {
     pub total_transactions: u64,
     pub number_of_mm_transactions: u64,
     pub block_time: u64,
+    pub cu_consumed : u64,
 }
 
 fn confirmations_by_blocks(
@@ -594,7 +595,10 @@ fn confirmations_by_blocks(
                             }
                         }
                     }
-                    let block = block.unwrap();
+                    let block = match block {
+                        Some(x) => x,
+                        None => continue,
+                    };
                         
                     let mut mm_transaction_count: u64 = 0;
                     let rewards = &block.rewards.unwrap();
@@ -608,12 +612,7 @@ fn confirmations_by_blocks(
 
                     if let Some(transactions) = block.transactions {
                         let nb_transactions = transactions.len();
-                        println!(
-                            "block {} at slot {} contains {} transactions",
-                            block.blockhash,
-                            block.block_height.unwrap(),
-                            nb_transactions
-                        );
+                        let mut cu_consumed : u64 = 0;
                         for solana_transaction_status::EncodedTransactionWithStatusMeta {
                             transaction,
                             meta,
@@ -634,6 +633,16 @@ fn confirmations_by_blocks(
                                             None => None,
                                         }
                                     };
+                                    // add CU in counter
+                                    if let Some(meta) = &meta {
+                                        
+                                        match meta.compute_units_consumed {
+                                            solana_transaction_status::option_serializer::OptionSerializer::Some(x) => {
+                                                cu_consumed = cu_consumed.saturating_add(x);
+                                            },
+                                            _ => {},
+                                        }
+                                    }
                                     if let Some(transaction_record) = transaction_record_op {
                                         let mut lock = tx_confirm_records.write().unwrap();
                                         mm_transaction_count += 1;
@@ -670,6 +679,13 @@ fn confirmations_by_blocks(
                                 }
                             }
                         }
+                        println!(
+                            "block {} at slot {} contains {} transactions and consumerd {} CUs",
+                            block.blockhash,
+                            block.block_height.unwrap(),
+                            nb_transactions,
+                            cu_consumed,
+                        );
                         // push block data
                         {
                             let mut blockstats_writer = tx_block_data.write().unwrap();
@@ -684,6 +700,7 @@ fn confirmations_by_blocks(
                                 },
                                 number_of_mm_transactions: mm_transaction_count,
                                 total_transactions: nb_transactions as u64,
+                                cu_consumed: cu_consumed,
                             })
                         }
                     }
@@ -777,6 +794,7 @@ fn main() {
         transaction_save_file,
         block_data_save_file,
         airdrop_accounts,
+        mango_cluster,
         ..
     } = &cli_config;
 
@@ -794,11 +812,11 @@ fn main() {
     let mango_keys_parsed: MangoConfig =
         serde_json::from_str(&mango_keys_json).expect("mango JSON was not well-formatted");
 
-    let mango_group_id = "testnet.0";
+    let mango_group_id = mango_cluster;
     let mango_group_config = mango_keys_parsed
         .groups
         .iter()
-        .find(|g| g.name == mango_group_id)
+        .find(|g| g.name == *mango_group_id)
         .unwrap();
 
     let number_of_tpu_clients: usize = 2 * (*quotes_per_second as usize);
@@ -879,11 +897,13 @@ fn main() {
             let perp_market = load_from_rpc::<PerpMarket>(&rpc_client, &perp_market_pk);
 
             // fetch price
-            let base_decimals = mango_group_config.tokens[market_index + 1].decimals;
+            let base_decimals = mango_group_config.tokens[market_index].decimals;
             let quote_decimals = mango_group_config.tokens[0].decimals;
+
             let base_unit = I80F48::from_num(10u64.pow(base_decimals as u32));
             let quote_unit = I80F48::from_num(10u64.pow(quote_decimals as u32));
             let price = mango_cache.price_cache[market_index].price;
+
             let price_quote_lots: i64 = price
                 .mul(quote_unit)
                 .mul(I80F48::from_num(perp_market.base_lot_size))
