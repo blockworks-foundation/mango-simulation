@@ -540,7 +540,7 @@ fn confirmations_by_blocks(
         }
     }
     println!("finished mapping all the trasactions");
-    sleep(Duration::from_secs(40));
+    sleep(Duration::from_secs(30));
     let commitment_confirmation = CommitmentConfig {
         commitment: CommitmentLevel::Confirmed,
     };
@@ -677,13 +677,6 @@ fn confirmations_by_blocks(
                                 }
                             }
                         }
-                        println!(
-                            "block {} at slot {} contains {} transactions and consumerd {} CUs",
-                            block.blockhash,
-                            block.block_height.unwrap(),
-                            nb_transactions,
-                            cu_consumed,
-                        );
                         // push block data
                         {
                             let mut blockstats_writer = tx_block_data.write().unwrap();
@@ -714,6 +707,21 @@ fn confirmations_by_blocks(
     let mut timeout_writer = tx_timeout_records.write().unwrap();
     for x in transaction_map.read().unwrap().iter() {
         timeout_writer.push(x.1.clone())
+    }
+
+    // sort all blocks by slot and print info
+    {
+        let mut blockstats_writer = tx_block_data.write().unwrap();
+        blockstats_writer.sort_by(|a, b| a.block_slot.partial_cmp(&b.block_slot).unwrap());
+        for block_stat in blockstats_writer.iter() {
+            info!(
+                "block {} at slot {} contains {} transactions and consumerd {} CUs",
+                block_stat.block_hash,
+                block_stat.block_slot,
+                block_stat.total_transactions,
+                block_stat.cu_consumed,
+            );
+        }
     }
 }
 
@@ -812,7 +820,7 @@ fn main() {
         .find(|g| g.name == *mango_group_id)
         .unwrap();
 
-    let number_of_tpu_clients: usize = 2 * (*quotes_per_second as usize);
+    let number_of_tpu_clients: usize = 1;
     let rpc_clients = RotatingQueue::<Arc<RpcClient>>::new(number_of_tpu_clients, || {
         Arc::new(RpcClient::new_with_commitment(
             json_rpc_url.to_string(),
@@ -896,6 +904,10 @@ fn main() {
             let base_unit = I80F48::from_num(10u64.pow(base_decimals as u32));
             let quote_unit = I80F48::from_num(10u64.pow(quote_decimals as u32));
             let price = mango_cache.price_cache[market_index].price;
+            println!(
+                "market index {} price of  : {}",
+                market_index, mango_cache.price_cache[market_index].price
+            );
 
             let price_quote_lots: i64 = price
                 .mul(quote_unit)
