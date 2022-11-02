@@ -33,10 +33,10 @@ impl Default for Config {
             quotes_per_second: 1,
             account_keys: String::new(),
             mango_keys: String::new(),
-            transaction_save_file : String::new(),
-            block_data_save_file : String::new(),
-            airdrop_accounts : false,
-            mango_cluster : "testnet.0".to_string(),
+            transaction_save_file: String::new(),
+            block_data_save_file: String::new(),
+            airdrop_accounts: false,
+            mango_cluster: "testnet.0".to_string(),
         }
     }
 }
@@ -136,29 +136,29 @@ pub fn build_args<'a, 'b>(version: &'b str) -> App<'a, 'b> {
         )
         .arg(
             Arg::with_name("transaction_save_file")
-            .short("tsf")
-            .long("transaction_save_file")
-            .value_name("FILENAME")
-            .takes_value(true)
-            .required(false)
-            .help("To save details of all transactions during a run")
+                .short("tsf")
+                .long("transaction_save_file")
+                .value_name("FILENAME")
+                .takes_value(true)
+                .required(false)
+                .help("To save details of all transactions during a run"),
         )
         .arg(
             Arg::with_name("block_data_save_file")
-            .short("bdsf")
-            .long("block_data_save_file")
-            .value_name("FILENAME")
-            .takes_value(true)
-            .required(false)
-            .help("To save details of all block containing mm transactions")
+                .short("bdsf")
+                .long("block_data_save_file")
+                .value_name("FILENAME")
+                .takes_value(true)
+                .required(false)
+                .help("To save details of all block containing mm transactions"),
         )
         .arg(
             Arg::with_name("airdrop-accounts")
-            .long("airdrop-accounts")
-            .value_name("BOOL")
-            .takes_value(false)
-            .required(false)
-            .help("Airdrop all MM accounts before stating")
+                .long("airdrop-accounts")
+                .value_name("BOOL")
+                .takes_value(false)
+                .required(false)
+                .help("Airdrop all MM accounts before stating"),
         )
         .arg(
             Arg::with_name("mango-cluster")
@@ -235,12 +235,11 @@ pub fn extract_args(matches: &ArgMatches) -> Config {
         Some(x) => x.to_string(),
         None => String::new(),
     };
-    
+
     args.airdrop_accounts = matches.is_present("airdrop-accounts");
     args.mango_cluster = match matches.value_of("mango-cluster") {
         Some(x) => x.to_string(),
         None => "testnet.0".to_string(),
     };
     args
-
 }
