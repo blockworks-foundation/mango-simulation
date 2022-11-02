@@ -42,7 +42,7 @@ use std::{
     collections::HashMap,
     collections::{HashSet, VecDeque},
     fs,
-    ops::{Div, Mul, Add},
+    ops::{Add, Div, Mul},
     str::FromStr,
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
@@ -343,7 +343,7 @@ fn process_signature_confirmation_batch(
                                 successful: s.err.is_none(),
                                 error: match &s.err {
                                     Some(e) => e.to_string(),
-                                    None=> "".to_string(),
+                                    None => "".to_string(),
                                 },
                                 block_hash: Pubkey::default().to_string(),
                                 slot_leader: Pubkey::default().to_string(),
@@ -496,7 +496,7 @@ struct BlockData {
     pub total_transactions: u64,
     pub number_of_mm_transactions: u64,
     pub block_time: u64,
-    pub cu_consumed : u64,
+    pub cu_consumed: u64,
 }
 
 fn confirmations_by_blocks(
@@ -599,7 +599,6 @@ fn confirmations_by_blocks(
                         Some(x) => x,
                         None => continue,
                     };
-                        
                     let mut mm_transaction_count: u64 = 0;
                     let rewards = &block.rewards.unwrap();
                     let slot_leader =  match rewards
@@ -635,7 +634,6 @@ fn confirmations_by_blocks(
                                     };
                                     // add CU in counter
                                     if let Some(meta) = &meta {
-                                        
                                         match meta.compute_units_consumed {
                                             solana_transaction_status::option_serializer::OptionSerializer::Some(x) => {
                                                 cu_consumed = cu_consumed.saturating_add(x);
@@ -736,8 +734,8 @@ fn write_transaction_data_into_csv(
 
         let timeout_lk = tx_timeout_records.read().unwrap();
         for timeout_record in timeout_lk.iter() {
-            writer.serialize(
-                TransactionConfirmRecord{
+            writer
+                .serialize(TransactionConfirmRecord {
                     block_hash: "".to_string(),
                     confirmed_at: "".to_string(),
                     confirmed_slot: 0,
@@ -751,18 +749,14 @@ fn write_transaction_data_into_csv(
                     slot_processed: 0,
                     successful: false,
                     timed_out: true,
-                }
-            ).unwrap();
+                })
+                .unwrap();
         }
     }
     writer.flush().unwrap();
 }
 
-
-fn write_block_data_into_csv(
-    block_data_csv: String,
-    tx_block_data: Arc<RwLock<Vec<BlockData>>>,
-) {
+fn write_block_data_into_csv(block_data_csv: String, tx_block_data: Arc<RwLock<Vec<BlockData>>>) {
     if block_data_csv.is_empty() {
         return;
     }
@@ -774,7 +768,6 @@ fn write_block_data_into_csv(
     }
     writer.flush().unwrap();
 }
-
 
 fn main() {
     solana_logger::setup_with_default("solana=info");
@@ -948,17 +941,20 @@ fn main() {
 
             if airdrop_accounts {
                 println!("Transfering 1 SOL to {}", mango_account_signer.pubkey());
-                let inx = solana_sdk::system_instruction::transfer( &id.pubkey(), &mango_account_signer.pubkey(), LAMPORTS_PER_SOL);
+                let inx = solana_sdk::system_instruction::transfer(
+                    &id.pubkey(),
+                    &mango_account_signer.pubkey(),
+                    LAMPORTS_PER_SOL,
+                );
 
-                let mut tx = Transaction::new_unsigned(Message::new(
-                    &[inx],
-                    Some(&id.pubkey()),
-                ));
-    
+                let mut tx = Transaction::new_unsigned(Message::new(&[inx], Some(&id.pubkey())));
+
                 if let Ok(recent_blockhash) = blockhash.read() {
                     tx.sign(&[id], *recent_blockhash);
                 }
-                rpc_client.send_and_confirm_transaction_with_spinner(&tx).unwrap();
+                rpc_client
+                    .send_and_confirm_transaction_with_spinner(&tx)
+                    .unwrap();
             }
 
             info!(
@@ -1086,10 +1082,7 @@ fn main() {
                 tx_timeout_records,
             );
 
-            write_block_data_into_csv(
-                block_data_save_file,
-                tx_block_data
-            );
+            write_block_data_into_csv(block_data_save_file, tx_block_data);
         })
         .unwrap();
 
