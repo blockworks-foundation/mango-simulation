@@ -20,6 +20,7 @@ pub struct Config {
     pub block_data_save_file: String,
     pub airdrop_accounts: bool,
     pub mango_cluster: String,
+    pub txs_batch_size: Option<usize>,
 }
 
 impl Default for Config {
@@ -37,6 +38,7 @@ impl Default for Config {
             block_data_save_file: String::new(),
             airdrop_accounts: false,
             mango_cluster: "testnet.0".to_string(),
+            txs_batch_size: None,
         }
     }
 }
@@ -168,6 +170,14 @@ pub fn build_args<'a, 'b>(version: &'b str) -> App<'a, 'b> {
                 .takes_value(true)
                 .help("Name of mango cluster from ids.json"),
         )
+        .arg(
+            Arg::with_name("batch-size")
+                .long("batch-size")
+                .value_name("UINT")
+                .takes_value(true)
+                .required(false)
+                .help("If specified, transactions are send in batches of specified size"),
+        )
 }
 
 /// Parses a clap `ArgMatches` structure into a `Config`
@@ -241,5 +251,8 @@ pub fn extract_args(matches: &ArgMatches) -> Config {
         Some(x) => x.to_string(),
         None => "testnet.0".to_string(),
     };
+    args.txs_batch_size = matches
+        .value_of("batch-size")
+        .map(|batch_size_str| batch_size_str.parse().expect("can't parse batch-size"));
     args
 }
