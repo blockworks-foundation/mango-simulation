@@ -7,7 +7,6 @@ use mango::{
     state::{MangoCache, MangoGroup, PerpMarket},
 };
 use mango_common::Loadable;
-use rayon::ThreadBuilder;
 use serde::Serialize;
 use serde_json;
 mod rotating_queue;
@@ -29,20 +28,16 @@ use solana_sdk::{
     hash::Hash,
     instruction::Instruction,
     message::Message,
-    pubkey::Pubkey,
     signature::{Keypair, Signature, Signer},
-    stake::instruction,
     transaction::Transaction,
 };
-use solana_transaction_status::{EncodedConfirmedBlock, TransactionDetails, UiTransactionEncoding};
 
-use core::time;
+use solana_program::pubkey::Pubkey;
+
 use std::{
-    cell::Ref,
     collections::HashMap,
-    collections::{HashSet, VecDeque},
     fs,
-    ops::{Add, Div, Mul},
+    ops::{Div, Mul},
     str::FromStr,
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
@@ -55,8 +50,41 @@ use std::{
 
 use csv;
 
+// as there are similar modules solana_sdk and solana_program
+// solana internals use solana_sdk but external dependancies like mango use solana program
+// that is why we have some helper methods
+fn to_sdk_pk(pubkey: &Pubkey) -> solana_sdk::pubkey::Pubkey {
+    solana_sdk::pubkey::Pubkey::from(pubkey.to_bytes())
+}
+
+fn to_sp_pk(pubkey: &solana_sdk::pubkey::Pubkey) -> Pubkey {
+    Pubkey::new_from_array(pubkey.to_bytes())
+}
+
+fn to_sdk_accountmetas(
+    vec: Vec<solana_program::instruction::AccountMeta>,
+) -> Vec<solana_sdk::instruction::AccountMeta> {
+    vec.iter()
+        .map(|x| solana_sdk::instruction::AccountMeta {
+            pubkey: to_sdk_pk(&x.pubkey),
+            is_signer: x.is_signer,
+            is_writable: x.is_writable,
+        })
+        .collect::<Vec<solana_sdk::instruction::AccountMeta>>()
+}
+
+fn to_sdk_instruction(
+    instruction: solana_program::instruction::Instruction,
+) -> solana_sdk::instruction::Instruction {
+    solana_sdk::instruction::Instruction {
+        program_id: to_sdk_pk(&instruction.program_id),
+        accounts: to_sdk_accountmetas(instruction.accounts),
+        data: instruction.data,
+    }
+}
+
 fn load_from_rpc<T: Loadable>(rpc_client: &RpcClient, pk: &Pubkey) -> T {
-    let acc = rpc_client.get_account(pk).unwrap();
+    let acc = rpc_client.get_account(&to_sdk_pk(pk)).unwrap();
     return T::load_from_bytes(acc.data.as_slice()).unwrap().clone();
 }
 
@@ -127,14 +155,14 @@ struct PerpMarketCache {
     pub perp_market: PerpMarket,
 }
 
-struct TransactionInfo {
+struct _TransactionInfo {
     pub signature: Signature,
-    pub transactionSendTime: DateTime<Utc>,
+    pub transaction_send_time: DateTime<Utc>,
     pub send_slot: Slot,
-    pub confirmationRetries: u32,
+    pub confirmation_retries: u32,
     pub error: String,
-    pub confirmationBlockHash: Pubkey,
-    pub leaderConfirmingTransaction: Pubkey,
+    pub confirmation_blockhash: Pubkey,
+    pub leader_confirming_transaction: Pubkey,
     pub timeout: bool,
     pub market_maker: Pubkey,
     pub market: Pubkey,
@@ -145,7 +173,6 @@ fn poll_blockhash_and_slot(
     blockhash: Arc<RwLock<Hash>>,
     slot: &AtomicU64,
     client: &Arc<RpcClient>,
-    _id: &Pubkey,
 ) {
     let mut blockhash_last_updated = Instant::now();
     //let mut last_error_log = Instant::now();
@@ -175,14 +202,6 @@ fn poll_blockhash_and_slot(
     }
 }
 
-fn pk_from_str(str: &str) -> solana_program::pubkey::Pubkey {
-    return solana_program::pubkey::Pubkey::from_str(str).unwrap();
-}
-
-fn pk_from_str_like<T: ToString>(str_like: T) -> solana_program::pubkey::Pubkey {
-    return pk_from_str(&str_like.to_string());
-}
-
 fn seconds_since(dt: DateTime<Utc>) -> i64 {
     Utc::now().signed_duration_since(dt).num_seconds()
 }
@@ -190,96 +209,87 @@ fn seconds_since(dt: DateTime<Utc>) -> i64 {
 fn create_ask_bid_transaction(
     c: &PerpMarketCache,
     mango_account_pk: Pubkey,
-    mango_account_signer_pk: Pubkey,
+    mango_account_signer: &Keypair,
 ) -> Transaction {
+
+    let mango_account_signer_pk = to_sp_pk(&mango_account_signer.pubkey());
     let offset = rand::random::<i8>() as i64;
     let spread = rand::random::<u8>() as i64;
     debug!(
         "price:{:?} price_quote_lots:{:?} order_base_lots:{:?} offset:{:?} spread:{:?}",
         c.price, c.price_quote_lots, c.order_base_lots, offset, spread
     );
-    let cancel_ix: Instruction = serde_json::from_str(
-        &serde_json::to_string(
-            &cancel_all_perp_orders(
-                &pk_from_str_like(&c.mango_program_pk),
-                &pk_from_str_like(&c.mango_group_pk),
-                &pk_from_str_like(&mango_account_pk),
-                &(pk_from_str_like(&mango_account_signer_pk)),
-                &(pk_from_str_like(&c.perp_market_pk)),
-                &c.perp_market.bids,
-                &c.perp_market.asks,
-                10,
-            )
-            .unwrap(),
+    let cancel_ix: Instruction = to_sdk_instruction(
+        cancel_all_perp_orders(
+            &c.mango_program_pk,
+            &c.mango_group_pk,
+            &mango_account_pk,
+            &mango_account_signer_pk,
+            &c.perp_market_pk,
+            &c.perp_market.bids,
+            &c.perp_market.asks,
+            10,
         )
         .unwrap(),
-    )
-    .unwrap();
+    );
 
-    let place_bid_ix: Instruction = serde_json::from_str(
-        &serde_json::to_string(
-            &place_perp_order2(
-                &pk_from_str_like(&c.mango_program_pk),
-                &pk_from_str_like(&c.mango_group_pk),
-                &pk_from_str_like(&mango_account_pk),
-                &(pk_from_str_like(&mango_account_signer_pk)),
-                &pk_from_str_like(&c.mango_cache_pk),
-                &(pk_from_str_like(&c.perp_market_pk)),
-                &c.perp_market.bids,
-                &c.perp_market.asks,
-                &c.perp_market.event_queue,
-                None,
-                &[],
-                Side::Bid,
-                c.price_quote_lots + offset - spread,
-                c.order_base_lots,
-                i64::MAX,
-                1,
-                mango::matching::OrderType::Limit,
-                false,
-                None,
-                64,
-                mango::matching::ExpiryType::Absolute,
-            )
-            .unwrap(),
+    let place_bid_ix: Instruction = to_sdk_instruction(
+        place_perp_order2(
+            &c.mango_program_pk,
+            &c.mango_group_pk,
+            &mango_account_pk,
+            &mango_account_signer_pk,
+            &c.mango_cache_pk,
+            &c.perp_market_pk,
+            &c.perp_market.bids,
+            &c.perp_market.asks,
+            &c.perp_market.event_queue,
+            None,
+            &[],
+            Side::Bid,
+            c.price_quote_lots + offset - spread,
+            c.order_base_lots,
+            i64::MAX,
+            1,
+            mango::matching::OrderType::Limit,
+            false,
+            None,
+            64,
+            mango::matching::ExpiryType::Absolute,
         )
         .unwrap(),
-    )
-    .unwrap();
+    );
 
-    let place_ask_ix: Instruction = serde_json::from_str(
-        &serde_json::to_string(
-            &place_perp_order2(
-                &pk_from_str_like(&c.mango_program_pk),
-                &pk_from_str_like(&c.mango_group_pk),
-                &pk_from_str_like(&mango_account_pk),
-                &(pk_from_str_like(&mango_account_signer_pk)),
-                &pk_from_str_like(&c.mango_cache_pk),
-                &(pk_from_str_like(&c.perp_market_pk)),
-                &c.perp_market.bids,
-                &c.perp_market.asks,
-                &c.perp_market.event_queue,
-                None,
-                &[],
-                Side::Ask,
-                c.price_quote_lots + offset + spread,
-                c.order_base_lots,
-                i64::MAX,
-                2,
-                mango::matching::OrderType::Limit,
-                false,
-                None,
-                64,
-                mango::matching::ExpiryType::Absolute,
-            )
-            .unwrap(),
+    let place_ask_ix: Instruction = to_sdk_instruction(
+        place_perp_order2(
+            &c.mango_program_pk,
+            &c.mango_group_pk,
+            &mango_account_pk,
+            &mango_account_signer_pk,
+            &c.mango_cache_pk,
+            &c.perp_market_pk,
+            &c.perp_market.bids,
+            &c.perp_market.asks,
+            &c.perp_market.event_queue,
+            None,
+            &[],
+            Side::Ask,
+            c.price_quote_lots + offset + spread,
+            c.order_base_lots,
+            i64::MAX,
+            2,
+            mango::matching::OrderType::Limit,
+            false,
+            None,
+            64,
+            mango::matching::ExpiryType::Absolute,
         )
         .unwrap(),
-    )
-    .unwrap();
+    );
+
     Transaction::new_unsigned(Message::new(
         &[cancel_ix, place_bid_ix, place_ask_ix],
-        Some(&mango_account_signer_pk),
+        Some(&mango_account_signer.pubkey()),
     ))
 }
 
@@ -293,11 +303,12 @@ fn send_mm_transactions(
     blockhash: Arc<RwLock<Hash>>,
     slot: &AtomicU64,
 ) {
+    let mango_account_signer_pk = to_sp_pk(&mango_account_signer.pubkey());
     // update quotes 2x per second
     for _ in 0..quotes_per_second {
         for c in perp_market_caches.iter() {
             let mut tx =
-                create_ask_bid_transaction(c, mango_account_pk, mango_account_signer.pubkey());
+                create_ask_bid_transaction(c, mango_account_pk, &mango_account_signer);
 
             if let Ok(recent_blockhash) = blockhash.read() {
                 tx.sign(&[mango_account_signer], *recent_blockhash);
@@ -308,7 +319,7 @@ fn send_mm_transactions(
                 signature: tx.signatures[0],
                 sent_at: Utc::now(),
                 sent_slot: slot.load(Ordering::Acquire),
-                market_maker: mango_account_signer.pubkey(),
+                market_maker: mango_account_signer_pk,
                 market: c.perp_market_pk,
             });
             if sent.is_err() {
@@ -333,6 +344,8 @@ fn send_mm_transactions_batched(
     slot: &AtomicU64,
 ) {
     let mut transactions = Vec::<_>::with_capacity(txs_batch_size);
+
+    let mango_account_signer_pk = to_sp_pk(&mango_account_signer.pubkey());
     // update quotes 2x per second
     for _ in 0..quotes_per_second {
         for c in perp_market_caches.iter() {
@@ -340,7 +353,7 @@ fn send_mm_transactions_batched(
                 transactions.push(create_ask_bid_transaction(
                     c,
                     mango_account_pk,
-                    mango_account_signer.pubkey(),
+                    &mango_account_signer,
                 ));
             }
 
@@ -363,7 +376,7 @@ fn send_mm_transactions_batched(
                     signature: tx.signatures[0],
                     sent_at: Utc::now(),
                     sent_slot: slot.load(Ordering::Acquire),
-                    market_maker: mango_account_signer.pubkey(),
+                    market_maker: mango_account_signer_pk,
                     market: c.perp_market_pk,
                 });
                 if sent.is_err() {
@@ -455,7 +468,6 @@ fn confirmation_by_querying_rpc(
     tx_timeout_records: Arc<RwLock<Vec<TransactionSendRecord>>>,
 ) {
     const TIMEOUT: u64 = 30;
-    let mut error: bool = false;
     let mut recv_until_confirm = recv_limit;
     let not_confirmed: Arc<RwLock<Vec<TransactionSendRecord>>> = Arc::new(RwLock::new(Vec::new()));
     loop {
@@ -543,7 +555,6 @@ fn confirmation_by_querying_rpc(
                             info!("channel disconnected {}", recv_until_confirm);
                         }
                         debug!("channel disconnected");
-                        error = true;
                         break; // still confirm remaining transctions
                     }
                 }
@@ -636,7 +647,7 @@ fn confirmations_by_blocks(
                 for slot in slot_batch {
                     // retry search for block 10 times
                     let mut block = None;
-                    for i in 0..=10 {
+                    for _i in 0..=10 {
                         let block_res = client
                         .get_block_with_config(
                             slot,
@@ -931,7 +942,6 @@ fn main() {
         let exit_signal = exit_signal.clone();
         let blockhash = blockhash.clone();
         let client = rpc_client.clone();
-        let id = id.pubkey();
         let current_slot = current_slot.clone();
         Builder::new()
             .name("solana-blockhash-poller".to_string())
@@ -941,7 +951,6 @@ fn main() {
                     blockhash.clone(),
                     current_slot.as_ref(),
                     &client,
-                    &id,
                 );
             })
             .unwrap()
