@@ -209,8 +209,10 @@ fn seconds_since(dt: DateTime<Utc>) -> i64 {
 fn create_ask_bid_transaction(
     c: &PerpMarketCache,
     mango_account_pk: Pubkey,
-    mango_account_signer_pk: Pubkey,
+    mango_account_signer: &Keypair,
 ) -> Transaction {
+
+    let mango_account_signer_pk = to_sp_pk(&mango_account_signer.pubkey());
     let offset = rand::random::<i8>() as i64;
     let spread = rand::random::<u8>() as i64;
     debug!(
@@ -287,7 +289,7 @@ fn create_ask_bid_transaction(
 
     Transaction::new_unsigned(Message::new(
         &[cancel_ix, place_bid_ix, place_ask_ix],
-        Some(&mango_account_signer_pk),
+        Some(&mango_account_signer.pubkey()),
     ))
 }
 
@@ -306,7 +308,7 @@ fn send_mm_transactions(
     for _ in 0..quotes_per_second {
         for c in perp_market_caches.iter() {
             let mut tx =
-                create_ask_bid_transaction(c, mango_account_pk, mango_account_signer.pubkey());
+                create_ask_bid_transaction(c, mango_account_pk, &mango_account_signer);
 
             if let Ok(recent_blockhash) = blockhash.read() {
                 tx.sign(&[mango_account_signer], *recent_blockhash);
@@ -342,6 +344,8 @@ fn send_mm_transactions_batched(
     slot: &AtomicU64,
 ) {
     let mut transactions = Vec::<_>::with_capacity(txs_batch_size);
+
+    let mango_account_signer_pk = to_sp_pk(&mango_account_signer.pubkey());
     // update quotes 2x per second
     for _ in 0..quotes_per_second {
         for c in perp_market_caches.iter() {
@@ -349,7 +353,7 @@ fn send_mm_transactions_batched(
                 transactions.push(create_ask_bid_transaction(
                     c,
                     mango_account_pk,
-                    mango_account_signer.pubkey(),
+                    &mango_account_signer,
                 ));
             }
 
@@ -372,7 +376,7 @@ fn send_mm_transactions_batched(
                     signature: tx.signatures[0],
                     sent_at: Utc::now(),
                     sent_slot: slot.load(Ordering::Acquire),
-                    market_maker: mango_account_signer.pubkey(),
+                    market_maker: mango_account_signer_pk,
                     market: c.perp_market_pk,
                 });
                 if sent.is_err() {
