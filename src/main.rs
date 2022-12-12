@@ -211,7 +211,6 @@ fn create_ask_bid_transaction(
     mango_account_pk: Pubkey,
     mango_account_signer: &Keypair,
 ) -> Transaction {
-
     let mango_account_signer_pk = to_sp_pk(&mango_account_signer.pubkey());
     let offset = rand::random::<i8>() as i64;
     let spread = rand::random::<u8>() as i64;
@@ -307,8 +306,7 @@ fn send_mm_transactions(
     // update quotes 2x per second
     for _ in 0..quotes_per_second {
         for c in perp_market_caches.iter() {
-            let mut tx =
-                create_ask_bid_transaction(c, mango_account_pk, &mango_account_signer);
+            let mut tx = create_ask_bid_transaction(c, mango_account_pk, &mango_account_signer);
 
             if let Ok(recent_blockhash) = blockhash.read() {
                 tx.sign(&[mango_account_signer], *recent_blockhash);
@@ -572,6 +570,7 @@ struct BlockData {
     pub number_of_mm_transactions: u64,
     pub block_time: u64,
     pub cu_consumed: u64,
+    pub mm_cu_consumed: u64,
 }
 
 fn confirmations_by_blocks(
@@ -687,6 +686,7 @@ fn confirmations_by_blocks(
                     if let Some(transactions) = block.transactions {
                         let nb_transactions = transactions.len();
                         let mut cu_consumed : u64 = 0;
+                        let mut mm_cu_consumed : u64 = 0;
                         for solana_transaction_status::EncodedTransactionWithStatusMeta {
                             transaction,
                             meta,
@@ -717,6 +717,17 @@ fn confirmations_by_blocks(
                                         }
                                     }
                                     if let Some(transaction_record) = transaction_record_op {
+
+                                        // add CU in counter
+                                        if let Some(meta) = &meta {
+                                            match meta.compute_units_consumed {
+                                                solana_transaction_status::option_serializer::OptionSerializer::Some(x) => {
+                                                    mm_cu_consumed = mm_cu_consumed.saturating_add(x);
+                                                },
+                                                _ => {},
+                                            }
+                                        }
+
                                         let mut lock = tx_confirm_records.write().unwrap();
                                         mm_transaction_count += 1;
 
@@ -767,6 +778,7 @@ fn confirmations_by_blocks(
                                 number_of_mm_transactions: mm_transaction_count,
                                 total_transactions: nb_transactions as u64,
                                 cu_consumed: cu_consumed,
+                                mm_cu_consumed: mm_cu_consumed,
                             })
                         }
                     }
