@@ -802,7 +802,7 @@ fn confirmations_by_blocks(
         blockstats_writer.sort_by(|a, b| a.block_slot.partial_cmp(&b.block_slot).unwrap());
         for block_stat in blockstats_writer.iter() {
             info!(
-                "block {} at slot {} contains {} transactions and consumerd {} CUs",
+                "block {} at slot {} contains {} transactions and consumed {} CUs",
                 block_stat.block_hash,
                 block_stat.block_slot,
                 block_stat.total_transactions,
