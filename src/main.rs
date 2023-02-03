@@ -131,6 +131,7 @@ struct TransactionConfirmRecord {
     pub signature: String,
     pub sent_slot: Slot,
     pub sent_at: String,
+    pub processed_slot: Slot,
     pub confirmed_slot: Slot,
     pub confirmed_at: String,
     pub successful: bool,
@@ -139,7 +140,6 @@ struct TransactionConfirmRecord {
     pub market_maker: String,
     pub market: String,
     pub block_hash: String,
-    pub slot_processed: Slot,
     pub timed_out: bool,
 }
 
@@ -389,8 +389,10 @@ fn send_mm_transactions_batched(
     }
 }
 
+
 fn process_signature_confirmation_batch(
     rpc_client: &RpcClient,
+    // TODO: current_slot: &AtomicU64,
     batch: &Vec<TransactionSendRecord>,
     not_confirmed: &Arc<RwLock<Vec<TransactionSendRecord>>>,
     confirmed: &Arc<RwLock<Vec<TransactionConfirmRecord>>>,
@@ -413,8 +415,9 @@ fn process_signature_confirmation_batch(
                                 signature: tx_record.signature.to_string(),
                                 sent_slot: tx_record.sent_slot,
                                 sent_at: tx_record.sent_at.to_string(),
+                                processed_slot: s.slot,
                                 confirmed_at: Utc::now().to_string(),
-                                confirmed_slot: s.slot,
+                                confirmed_slot: s.slot, // TODO: should
                                 successful: s.err.is_none(),
                                 error: match &s.err {
                                     Some(e) => e.to_string(),
@@ -424,7 +427,6 @@ fn process_signature_confirmation_batch(
                                 slot_leader: Pubkey::default().to_string(),
                                 market: tx_record.market.to_string(),
                                 market_maker: tx_record.market_maker.to_string(),
-                                slot_processed: tx_record.sent_slot,
                                 timed_out: false,
                             });
 
@@ -624,6 +626,7 @@ fn confirmations_by_blocks(
         .unwrap();
 
     let nb_blocks = block_res.len();
+    let nb_last_slot = block_res[nb_blocks-1];
     let nb_thread: usize = 16;
     println!("processing {} blocks", nb_blocks);
 
@@ -733,7 +736,7 @@ fn confirmations_by_blocks(
 
                                         (*lock).push(TransactionConfirmRecord {
                                             signature: transaction_record.signature.to_string(),
-                                            confirmed_slot: slot, // TODO: should be changed to correct slot
+                                            confirmed_slot: nb_last_slot, // TODO: might cause issues when processing lag is longer than batch
                                             confirmed_at: Utc::now().to_string(),
                                             sent_at: transaction_record.sent_at.to_string(),
                                             sent_slot: transaction_record.sent_slot,
@@ -753,7 +756,7 @@ fn confirmations_by_blocks(
                                             block_hash: block.blockhash.clone(),
                                             market: transaction_record.market.to_string(),
                                             market_maker: transaction_record.market_maker.to_string(),
-                                            slot_processed: slot,
+                                            processed_slot: slot,
                                             slot_leader: slot_leader.clone(),
                                             timed_out: false,
                                         })
@@ -841,7 +844,7 @@ fn write_transaction_data_into_csv(
                     sent_slot: timeout_record.sent_slot,
                     signature: timeout_record.signature.to_string(),
                     slot_leader: "".to_string(),
-                    slot_processed: 0,
+                    processed_slot: 0,
                     successful: false,
                     timed_out: true,
                 })
@@ -1173,21 +1176,20 @@ fn main() {
                 (timeouts.len() * 100) / total_signed
             );
 
-            // let mut confirmation_times = confirmed
-            //     .iter()
-            //     .map(|r| {
-            //         r.confirmed_at
-            //             .signed_duration_since(r.sent_at)
-            //             .num_milliseconds()
-            //     })
-            //     .collect::<Vec<_>>();
-            // confirmation_times.sort();
-            // info!(
-            //     "confirmation times min={} max={} median={}",
-            //     confirmation_times.first().unwrap(),
-            //     confirmation_times.last().unwrap(),
-            //     confirmation_times[confirmation_times.len() / 2]
-            // );
+            let mut processed_slot_deltas: Vec<_> = confirmed
+                .iter()
+                .map(|r| r.processed_slot.saturating_sub(r.sent_slot))
+                .collect();
+            processed_slot_deltas.sort();
+            info!(
+                "processed slot deltas min={:?} max={:?} median={:?} p75={:?} p90={:?} p95={:?}",
+                processed_slot_deltas.first(),
+                processed_slot_deltas.last(),
+                processed_slot_deltas.get(total_signed/2),
+                processed_slot_deltas.get(total_signed*3/4),
+                processed_slot_deltas.get(total_signed*9/10),
+                processed_slot_deltas.get(total_signed*19/20),
+            );
 
             write_transaction_data_into_csv(
                 transaction_save_file,
