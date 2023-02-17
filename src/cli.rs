@@ -18,7 +18,6 @@ pub struct Config {
     pub mango_keys: String,
     pub transaction_save_file: String,
     pub block_data_save_file: String,
-    pub airdrop_accounts: bool,
     pub mango_cluster: String,
     pub txs_batch_size: Option<usize>,
 }
@@ -36,7 +35,6 @@ impl Default for Config {
             mango_keys: String::new(),
             transaction_save_file: String::new(),
             block_data_save_file: String::new(),
-            airdrop_accounts: false,
             mango_cluster: "testnet.0".to_string(),
             txs_batch_size: None,
         }
@@ -155,14 +153,6 @@ pub fn build_args<'a, 'b>(version: &'b str) -> App<'a, 'b> {
                 .help("To save details of all block containing mm transactions"),
         )
         .arg(
-            Arg::with_name("airdrop-accounts")
-                .long("airdrop-accounts")
-                .value_name("BOOL")
-                .takes_value(false)
-                .required(false)
-                .help("Airdrop all MM accounts before stating"),
-        )
-        .arg(
             Arg::with_name("mango-cluster")
                 .short("c")
                 .long("mango-cluster")
@@ -246,7 +236,6 @@ pub fn extract_args(matches: &ArgMatches) -> Config {
         None => String::new(),
     };
 
-    args.airdrop_accounts = matches.is_present("airdrop-accounts");
     args.mango_cluster = match matches.value_of("mango-cluster") {
         Some(x) => x.to_string(),
         None => "testnet.0".to_string(),
