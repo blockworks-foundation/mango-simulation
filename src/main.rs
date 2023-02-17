@@ -13,8 +13,9 @@ use solana_bench_mango::{
     states::{BlockData, PerpMarketCache, TransactionConfirmRecord, TransactionSendRecord},
 };
 use solana_client::{
-    connection_cache::ConnectionCache, rpc_client::RpcClient, tpu_client::TpuClient,
+    rpc_client::RpcClient, tpu_client::TpuClient, connection_cache::ConnectionCache,
 };
+use solana_quic_client::{QuicPool, QuicConnectionManager, QuicConfig};
 use solana_sdk::commitment_config::CommitmentConfig;
 
 use std::{
@@ -23,7 +24,7 @@ use std::{
         atomic::{AtomicBool, AtomicU64, Ordering},
         Arc, RwLock,
     },
-    thread::{Builder, JoinHandle},
+    thread::{Builder, JoinHandle}, net::{IpAddr, Ipv4Addr},
 };
 
 fn main() {
@@ -76,15 +77,28 @@ fn main() {
         ))
     });
 
-    let tpu_client_pool = Arc::new(RotatingQueue::<Arc<TpuClient>>::new(
+    let connection_cache = ConnectionCache::new_with_client_options(
+        4,
+        None,
+        Some((id, IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)))),
+        None,
+    );
+    let quic_connection_cache = if let ConnectionCache::Quic(connection_cache) = connection_cache {
+        Some(connection_cache)
+    } else {
+        None
+    };
+
+    let tpu_client_pool = Arc::new(RotatingQueue::<Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>>::new(
         number_of_tpu_clients,
         || {
+            let quic_connection_cache = quic_connection_cache.clone();
             Arc::new(
                 TpuClient::new_with_connection_cache(
                     rpc_clients.get().clone(),
                     &websocket_url,
                     solana_client::tpu_client::TpuClientConfig::default(),
-                    Arc::new(ConnectionCache::default()),
+                    quic_connection_cache.unwrap(),
                 )
                 .unwrap(),
             )

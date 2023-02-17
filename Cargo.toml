@@ -27,18 +27,19 @@ serde_yaml = "0.8.23"
 mango = { git = "https://github.com/blockworks-foundation/mango-v3.git", branch = "mango_bencher_compatible", default-features = false, features = ["no-entrypoint"] }
 mango-common = { git = "https://github.com/blockworks-foundation/mango-v3.git", branch = "mango_bencher_compatible" }
 
-solana-client = { git = "https://github.com/solana-labs/solana.git", branch="v1.14" }
-solana-core = { git = "https://github.com/solana-labs/solana.git", branch="v1.14" }
-solana-metrics = { git = "https://github.com/solana-labs/solana.git", branch="v1.14" }
-solana-rpc = { git = "https://github.com/solana-labs/solana.git", branch="v1.14" }
-solana-runtime = { git = "https://github.com/solana-labs/solana.git", branch="v1.14" }
-solana-sdk = { git = "https://github.com/solana-labs/solana.git", branch="v1.14" }
-solana-clap-utils = { git = "https://github.com/solana-labs/solana.git", branch="v1.14" }
-solana-cli-config = { git = "https://github.com/solana-labs/solana.git", branch="v1.14" }
-solana-net-utils = { git = "https://github.com/solana-labs/solana.git", branch="v1.14" }
-solana-version = { git = "https://github.com/solana-labs/solana.git", branch="v1.14" }
-solana-logger = { git = "https://github.com/solana-labs/solana.git", branch="v1.14" }
-solana-transaction-status = { git = "https://github.com/solana-labs/solana.git", branch="v1.14" }
+solana-client = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-core = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-metrics = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-rpc = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-runtime = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-sdk = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-clap-utils = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-cli-config = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-net-utils = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-version = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-logger = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-transaction-status = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-quic-client = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
 
 thiserror = "1.0"
 solana-program = ">=1.9.0"

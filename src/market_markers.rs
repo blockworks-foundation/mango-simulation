@@ -17,6 +17,7 @@ use mango::{
 };
 use solana_client::tpu_client::TpuClient;
 use solana_program::pubkey::Pubkey;
+use solana_quic_client::{QuicPool, QuicConnectionManager, QuicConfig};
 use solana_sdk::{
     hash::Hash, instruction::Instruction, message::Message, signature::Keypair, signer::Signer,
     transaction::Transaction,
@@ -119,7 +120,7 @@ pub fn send_mm_transactions(
     quotes_per_second: u64,
     perp_market_caches: &Vec<PerpMarketCache>,
     tx_record_sx: &Sender<TransactionSendRecord>,
-    tpu_client_pool: Arc<RotatingQueue<Arc<TpuClient>>>,
+    tpu_client_pool: Arc<RotatingQueue<Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>>>,
     mango_account_pk: Pubkey,
     mango_account_signer: &Keypair,
     blockhash: Arc<RwLock<Hash>>,
@@ -158,7 +159,7 @@ pub fn send_mm_transactions_batched(
     quotes_per_second: u64,
     perp_market_caches: &Vec<PerpMarketCache>,
     tx_record_sx: &Sender<TransactionSendRecord>,
-    tpu_client_pool: Arc<RotatingQueue<Arc<TpuClient>>>,
+    tpu_client_pool: Arc<RotatingQueue<Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>>>,
     mango_account_pk: Pubkey,
     mango_account_signer: &Keypair,
     blockhash: Arc<RwLock<Hash>>,
@@ -219,7 +220,7 @@ pub fn start_market_making_threads(
     exit_signal: Arc<AtomicBool>,
     blockhash: Arc<RwLock<Hash>>,
     current_slot: Arc<AtomicU64>,
-    tpu_client_pool: Arc<RotatingQueue<Arc<TpuClient>>>,
+    tpu_client_pool: Arc<RotatingQueue<Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>>>,
     duration: &Duration,
     quotes_per_second: u64,
     txs_batch_size: Option<usize>,
