@@ -23,34 +23,27 @@ serde = "1.0.136"
 serde_derive = "1.0.103"
 serde_json = "1.0.79"
 serde_yaml = "0.8.23"
-mango = { path = "deps/mango-v3/program", default-features = false, features = ["no-entrypoint"] }
-mango-common = { path = "deps/mango-v3/common" }
-solana-bench-tps = { path = "deps/solana/bench-tps" }
-solana-clap-utils = { path = "deps/solana/clap-utils" }
-solana-cli-config = { path = "deps/solana/cli-config" }
-solana-client = { path = "deps/solana/client" }
-solana-core = { path = "deps/solana/core" }
-solana-faucet = { path = "deps/solana/faucet" }
-solana-genesis = { path = "deps/solana/genesis" }
-solana-gossip = { path = "deps/solana/gossip" }
-solana-logger = { path = "deps/solana/logger" }
-solana-measure = { path = "deps/solana/measure" }
-solana-metrics = { path = "deps/solana/metrics" }
-solana-net-utils = { path = "deps/solana/net-utils" }
-solana-rpc = { path = "deps/solana/rpc" }
-solana-runtime = { path = "deps/solana/runtime" }
-solana-sdk = { path = "deps/solana/sdk" }
-solana-streamer = { path = "deps/solana/streamer" }
-solana-transaction-status = { path = "deps/solana/transaction-status" }
-solana-version = { path = "deps/solana/version" }
+
+mango = { git = "https://github.com/blockworks-foundation/mango-v3.git", branch = "mango_bencher_compatible", default-features = false, features = ["no-entrypoint"] }
+mango-common = { git = "https://github.com/blockworks-foundation/mango-v3.git", branch = "mango_bencher_compatible" }
+
+solana-client = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-core = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-metrics = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-rpc = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-runtime = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-sdk = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-clap-utils = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-cli-config = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-net-utils = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-version = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-logger = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-transaction-status = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-quic-client = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+
 thiserror = "1.0"
 solana-program = ">=1.9.0"
 csv = "1.0.0"
-
-[dev-dependencies]
-serial_test = "0.6.0"
-solana-local-cluster = { path = "deps/solana/local-cluster" }
-solana-test-validator = { path = "deps/solana/test-validator" }
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
