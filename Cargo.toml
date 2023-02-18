@@ -40,10 +40,27 @@ solana-version = { git = "https://github.com/solana-labs/solana.git", branch="v1
 solana-logger = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
 solana-transaction-status = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
 solana-quic-client = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-account-decoder = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+
 
 thiserror = "1.0"
 solana-program = ">=1.9.0"
 csv = "1.0.0"
+tonic = { version = "0.6", features = ["tls", "compression"] }
+tokio = { version = "1", features = ["full"] }
+anyhow = "1.0"
+async-channel = "1.6"
+async-trait = "0.1"
+prost = "0.9"
+warp = "0.3"
+futures = "0.3.17"
+jsonrpc-core = "18.0.0"
+jsonrpc-core-client = { version = "18.0.0",  features = ["ws", "http"] }
+arrayref = "*"
+bytemuck = "1.7.2"
+
+[build-dependencies]
+tonic-build = { version = "0.6", features = ["compression"] }
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
@@ -52,3 +69,7 @@ exclude = [
     "deps/solana",
     "deps/mango-v3",
 ]
+
+[patch.crates-io]
+# for gzip encoded responses
+jsonrpc-core-client = { git = "https://github.com/ckamm/jsonrpc.git", branch = "ckamm/http-with-gzip" }
