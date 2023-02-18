@@ -1,8 +1,7 @@
 use crate::metrics::{MetricType, MetricU64, Metrics};
 
 use {
-    solana_sdk::account::{Account, AccountSharedData, ReadableAccount},
-    solana_sdk::pubkey::Pubkey,
+    solana_sdk::{pubkey::Pubkey, account::{Account, AccountSharedData, ReadableAccount}},
     std::collections::HashMap,
 };
 
@@ -27,7 +26,6 @@ pub struct AccountData {
     pub write_version: u64,
     pub account: AccountSharedData,
 }
-
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct AccountWrite {
@@ -64,7 +62,6 @@ pub struct SlotUpdate {
     pub parent: Option<u64>,
     pub status: SlotStatus,
 }
-
 
 /// Track slots and account writes
 ///

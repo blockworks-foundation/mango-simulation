@@ -5445,6 +5445,7 @@ dependencies = [
  "solana-version",
  "thiserror",
  "tokio",
+ "toml",
  "tonic 0.6.2",
  "tonic-build 0.6.2",
  "warp",

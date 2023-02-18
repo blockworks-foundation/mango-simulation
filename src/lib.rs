@@ -12,6 +12,7 @@ pub mod market_markers;
 pub mod metrics;
 pub mod rotating_queue;
 pub mod states;
+pub mod transaction_sender;
 
 trait AnyhowWrap {
   type Value;

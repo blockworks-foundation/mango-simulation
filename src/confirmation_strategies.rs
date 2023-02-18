@@ -14,9 +14,9 @@ use chrono::Utc;
 use crossbeam_channel::{Receiver, TryRecvError};
 use log::{debug, error, info, trace};
 use solana_client::{rpc_client::RpcClient, rpc_config::RpcBlockConfig};
-use solana_program::pubkey::Pubkey;
 use solana_sdk::{
     commitment_config::{CommitmentConfig, CommitmentLevel},
+    pubkey::Pubkey,
     signature::Signature,
 };
 use solana_transaction_status::RewardType;
