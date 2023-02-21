@@ -64,6 +64,7 @@ pub fn process_signature_confirmation_batch(
                                 market_maker: tx_record.market_maker.to_string(),
                                 slot_processed: tx_record.sent_slot,
                                 timed_out: false,
+                                priority_fees: tx_record.priority_fees,
                             });
 
                             debug!(
@@ -371,6 +372,7 @@ pub fn confirmations_by_blocks(
                                             slot_processed: slot,
                                             slot_leader: slot_leader.clone(),
                                             timed_out: false,
+                                            priority_fees: transaction_record.priority_fees,
                                         })
                                     }
 

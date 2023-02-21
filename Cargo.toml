@@ -23,6 +23,7 @@ serde = "1.0.136"
 serde_derive = "1.0.103"
 serde_json = "1.0.79"
 serde_yaml = "0.8.23"
+iter_tools = "0.1.4"
 
 mango = { git = "https://github.com/blockworks-foundation/mango-v3.git", branch = "mango_bencher_compatible", default-features = false, features = ["no-entrypoint"] }
 mango-common = { git = "https://github.com/blockworks-foundation/mango-v3.git", branch = "mango_bencher_compatible" }
