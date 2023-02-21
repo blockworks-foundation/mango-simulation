@@ -245,6 +245,13 @@ pub fn get_mango_market_perps_cache(
                 .div(I80F48::from_num(perp_market.base_lot_size))
                 .to_num();
 
+            let root_bank = &mango_group_config.tokens[market_index].root_key;
+            let root_bank = Pubkey::from_str(root_bank.as_str()).unwrap();
+            let node_banks = mango_group_config.tokens[market_index]
+                .node_keys
+                .iter()
+                .map(|x| Pubkey::from_str(x.as_str()).unwrap())
+                .collect();
             PerpMarketCache {
                 order_base_lots,
                 price,
@@ -254,6 +261,8 @@ pub fn get_mango_market_perps_cache(
                 mango_cache_pk,
                 perp_market_pk,
                 perp_market,
+                root_bank,
+                node_banks,
             }
         })
         .collect()

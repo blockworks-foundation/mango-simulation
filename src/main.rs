@@ -9,13 +9,11 @@ use solana_bench_mango::{
     },
     mango::{AccountKeys, MangoConfig},
     market_markers::start_market_making_threads,
-    rotating_queue::RotatingQueue,
     states::{BlockData, PerpMarketCache, TransactionConfirmRecord, TransactionSendRecord},
 };
 use solana_client::{
     connection_cache::ConnectionCache, rpc_client::RpcClient, tpu_client::TpuClient,
 };
-use solana_quic_client::{QuicConfig, QuicConnectionManager, QuicPool};
 use solana_sdk::commitment_config::CommitmentConfig;
 
 use std::{
@@ -54,7 +52,10 @@ fn main() {
     let transaction_save_file = transaction_save_file.clone();
     let block_data_save_file = block_data_save_file.clone();
 
-    info!("Connecting to the cluster");
+    info!(
+        "Connecting to the cluster {}, {}",
+        json_rpc_url, websocket_url
+    );
 
     let account_keys_json = fs::read_to_string(account_keys).expect("unable to read accounts file");
     let account_keys_parsed: Vec<AccountKeys> =
@@ -71,13 +72,10 @@ fn main() {
         .find(|g| g.name == *mango_group_id)
         .unwrap();
 
-    let number_of_tpu_clients: usize = 1;
-    let rpc_clients = RotatingQueue::<Arc<RpcClient>>::new(number_of_tpu_clients, || {
-        Arc::new(RpcClient::new_with_commitment(
-            json_rpc_url.to_string(),
-            CommitmentConfig::confirmed(),
-        ))
-    });
+    let rpc_client = Arc::new(RpcClient::new_with_commitment(
+        json_rpc_url.to_string(),
+        CommitmentConfig::confirmed(),
+    ));
 
     let connection_cache = ConnectionCache::new_with_client_options(
         4,
@@ -91,20 +89,15 @@ fn main() {
         None
     };
 
-    let tpu_client_pool = Arc::new(RotatingQueue::<
-        Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>,
-    >::new(number_of_tpu_clients, || {
-        let quic_connection_cache = quic_connection_cache.clone();
-        Arc::new(
-            TpuClient::new_with_connection_cache(
-                rpc_clients.get().clone(),
-                &websocket_url,
-                solana_client::tpu_client::TpuClientConfig::default(),
-                quic_connection_cache.unwrap(),
-            )
-            .unwrap(),
+    let tpu_client = Arc::new(
+        TpuClient::new_with_connection_cache(
+            rpc_client.clone(),
+            &websocket_url,
+            solana_client::tpu_client::TpuClientConfig::default(),
+            quic_connection_cache.unwrap(),
         )
-    }));
+        .unwrap(),
+    );
 
     info!(
         "accounts:{:?} markets:{:?} quotes_per_second:{:?} expected_tps:{:?} duration:{:?}",
@@ -144,7 +137,7 @@ fn main() {
         exit_signal.clone(),
         blockhash.clone(),
         current_slot.clone(),
-        tpu_client_pool.clone(),
+        tpu_client.clone(),
         &duration,
         *quotes_per_second,
         *txs_batch_size,
@@ -170,7 +163,7 @@ fn main() {
 
             //confirmation_by_querying_rpc(recv_limit, rpc_client.clone(), &tx_record_rx, tx_confirm_records.clone(), tx_timeout_records.clone());
             confirmations_by_blocks(
-                rpc_clients,
+                rpc_client.clone(),
                 &current_slot,
                 recv_limit,
                 tx_record_rx,

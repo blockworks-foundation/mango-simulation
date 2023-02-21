@@ -23,6 +23,7 @@ pub struct Config {
     pub mango_cluster: String,
     pub txs_batch_size: Option<usize>,
     pub priority_fees_proba: u8,
+    pub authority: Keypair,
 }
 
 impl Default for Config {
@@ -41,6 +42,7 @@ impl Default for Config {
             mango_cluster: "testnet.0".to_string(),
             txs_batch_size: None,
             priority_fees_proba: 0,
+            authority: Keypair::new(),
         }
     }
 }
@@ -180,7 +182,18 @@ pub fn build_args<'a, 'b>(version: &'b str) -> App<'a, 'b> {
                 .validator(is_valid_percentage)
                 .takes_value(true)
                 .required(false)
-                .help("Takes percentage of transaction we want to add random prioritization fees to, prioritization fees are random number between 100-1000"),
+                .help("Takes percentage of transaction we want to add random prioritization fees to, prioritization fees are random number between 100-1000")
+        )
+        .arg(
+            Arg::with_name("keeper-authority")
+                .long("keeper-authority")
+                .short("ka")
+                .value_name("STR")
+                .takes_value(true)
+                .required(false)
+                .help(
+                    "If specified, authority keypair would be used to pay for keeper transactions",
+                ),
         )
 }
 
@@ -262,5 +275,15 @@ pub fn extract_args(matches: &ArgMatches) -> Config {
         Some(x) => x.parse().expect("Percentage of transactions having prioritization fees"),
         None => 0,
     };
+    let (_, kp_auth_path) = ConfigInput::compute_keypair_path_setting(
+        matches.value_of("keeper-authority").unwrap_or(""),
+        &config.keypair_path,
+    );
+
+    if let Ok(kpa) = read_keypair_file(kp_auth_path) {
+        args.authority = kpa;
+    } else if matches.is_present("identity") {
+        panic!("could not parse identity path");
+    }
     args
 }

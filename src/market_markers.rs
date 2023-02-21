@@ -28,7 +28,6 @@ use solana_sdk::{
 use crate::{
     helpers::{to_sdk_instruction, to_sp_pk},
     mango::AccountKeys,
-    rotating_queue::RotatingQueue,
     states::{PerpMarketCache, TransactionSendRecord},
 };
 
@@ -153,9 +152,7 @@ pub fn send_mm_transactions(
     quotes_per_second: u64,
     perp_market_caches: &Vec<PerpMarketCache>,
     tx_record_sx: &Sender<TransactionSendRecord>,
-    tpu_client_pool: Arc<
-        RotatingQueue<Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>>,
-    >,
+    tpu_client: Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>,
     mango_account_pk: Pubkey,
     mango_account_signer: &Keypair,
     blockhash: Arc<RwLock<Hash>>,
@@ -178,7 +175,7 @@ pub fn send_mm_transactions(
             if let Ok(recent_blockhash) = blockhash.read() {
                 tx.sign(&[mango_account_signer], *recent_blockhash);
             }
-            let tpu_client = tpu_client_pool.get();
+            let tpu_client = tpu_client.clone();
             tpu_client.send_transaction(&tx);
             let sent = tx_record_sx.send(TransactionSendRecord {
                 signature: tx.signatures[0],
@@ -203,9 +200,7 @@ pub fn send_mm_transactions_batched(
     quotes_per_second: u64,
     perp_market_caches: &Vec<PerpMarketCache>,
     tx_record_sx: &Sender<TransactionSendRecord>,
-    tpu_client_pool: Arc<
-        RotatingQueue<Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>>,
-    >,
+    tpu_client: Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>,
     mango_account_pk: Pubkey,
     mango_account_signer: &Keypair,
     blockhash: Arc<RwLock<Hash>>,
@@ -236,7 +231,7 @@ pub fn send_mm_transactions_batched(
                     tx.0.sign(&[mango_account_signer], *recent_blockhash);
                 }
             }
-            let tpu_client = tpu_client_pool.get();
+            let tpu_client = tpu_client.clone();
             if tpu_client
                 .try_send_transaction_batch(
                     &transactions.iter().map(|x| x.0.clone()).collect_vec().as_slice(),
@@ -275,9 +270,7 @@ pub fn start_market_making_threads(
     exit_signal: Arc<AtomicBool>,
     blockhash: Arc<RwLock<Hash>>,
     current_slot: Arc<AtomicU64>,
-    tpu_client_pool: Arc<
-        RotatingQueue<Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>>,
-    >,
+    tpu_client: Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>,
     duration: &Duration,
     quotes_per_second: u64,
     txs_batch_size: Option<usize>,
@@ -288,7 +281,7 @@ pub fn start_market_making_threads(
         .map(|account_keys| {
             let _exit_signal = exit_signal.clone();
             // having a tpu client for each MM
-            let tpu_client_pool = tpu_client_pool.clone();
+            let tpu_client_pool = tpu_client.clone();
 
             let blockhash = blockhash.clone();
             let current_slot = current_slot.clone();

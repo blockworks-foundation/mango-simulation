@@ -23,7 +23,6 @@ use solana_transaction_status::RewardType;
 
 use crate::{
     helpers::seconds_since,
-    rotating_queue::RotatingQueue,
     states::{BlockData, TransactionConfirmRecord, TransactionSendRecord},
 };
 
@@ -201,7 +200,7 @@ pub fn confirmation_by_querying_rpc(
 }
 
 pub fn confirmations_by_blocks(
-    clients: RotatingQueue<Arc<RpcClient>>,
+    client: Arc<RpcClient>,
     current_slot: &AtomicU64,
     recv_limit: usize,
     tx_record_rx: Receiver<TransactionSendRecord>,
@@ -245,8 +244,7 @@ pub fn confirmations_by_blocks(
     let commitment_confirmation = CommitmentConfig {
         commitment: CommitmentLevel::Confirmed,
     };
-    let block_res = clients
-        .get()
+    let block_res = client
         .get_blocks_with_commitment(last_slot, None, commitment_confirmation)
         .unwrap();
 
@@ -264,7 +262,7 @@ pub fn confirmations_by_blocks(
         .map(|x| x.to_vec())
     {
         let map = transaction_map.clone();
-        let client = clients.get().clone();
+        let client = client.clone();
         let tx_confirm_records = tx_confirm_records.clone();
         let tx_block_data = tx_block_data.clone();
         let joinble = Builder::new()
