@@ -1,3 +1,5 @@
+use solana_clap_utils::input_validators::is_valid_percentage;
+
 use {
     clap::{crate_description, crate_name, App, Arg, ArgMatches},
     solana_clap_utils::input_validators::{is_url, is_url_or_moniker},
@@ -175,7 +177,7 @@ pub fn build_args<'a, 'b>(version: &'b str) -> App<'a, 'b> {
                 .long("prioritization-fees")
                 .value_name("UINT")
                 .min_values(1)
-                .max_values(100)
+                .validator(is_valid_percentage)
                 .takes_value(true)
                 .required(false)
                 .help("Takes percentage of transaction we want to add random prioritization fees to, prioritization fees are random number between 100-1000"),
@@ -257,7 +259,7 @@ pub fn extract_args(matches: &ArgMatches) -> Config {
         .map(|batch_size_str| batch_size_str.parse().expect("can't parse batch-size"));
 
     args.priority_fees_proba = match matches.value_of("prioritization-fees") {
-        Some(x) => x.parse().expect("Prioritization fees is between 1-100"),
+        Some(x) => x.parse().expect("Percentage of transactions having prioritization fees"),
         None => 0,
     };
     args

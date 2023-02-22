@@ -16,6 +16,7 @@ use mango::{
     instruction::{cancel_all_perp_orders, place_perp_order2},
     matching::Side,
 };
+use rand::{distributions::Uniform, prelude::Distribution};
 use solana_client::tpu_client::TpuClient;
 use solana_program::pubkey::Pubkey;
 use solana_quic_client::{QuicConfig, QuicConnectionManager, QuicPool};
@@ -35,7 +36,7 @@ pub fn create_ask_bid_transaction(
     c: &PerpMarketCache,
     mango_account_pk: Pubkey,
     mango_account_signer: &Keypair,
-    prioritization_fees: u32,
+    prioritization_fee: u64,
 ) -> Transaction {
     let mango_account_signer_pk = to_sp_pk(&mango_account_signer.pubkey());
     let offset = rand::random::<i8>() as i64;
@@ -45,9 +46,9 @@ pub fn create_ask_bid_transaction(
         c.price, c.price_quote_lots, c.order_base_lots, offset, spread
     );
     let mut instructions = vec![];
-    if prioritization_fees > 0 {
+    if prioritization_fee > 0 {
         let pfees = compute_budget::ComputeBudgetInstruction::set_compute_unit_price(
-            prioritization_fees as u64,
+            prioritization_fee,
         );
         instructions.push(pfees);
     }
@@ -129,6 +130,25 @@ pub fn create_ask_bid_transaction(
     ))
 }
 
+fn generate_random_fees(prioritization_fee_proba : u8, n: usize, min_fee: u64, max_fee: u64) -> Vec<u64> {
+    let mut rng = rand::thread_rng();
+    let range = Uniform::from(min_fee..max_fee);
+    let range_probability = Uniform::from(1..100);
+    (0..n)
+        .map(|_| {
+            if prioritization_fee_proba == 0 {
+                0
+            } else {
+                if range_probability.sample(&mut rng) <= prioritization_fee_proba {
+                    range.sample(&mut rng) as u64
+                } else {
+                    0
+                }
+            }
+        })
+        .collect()
+  }
+
 pub fn send_mm_transactions(
     quotes_per_second: u64,
     perp_market_caches: &Vec<PerpMarketCache>,
@@ -140,21 +160,14 @@ pub fn send_mm_transactions(
     mango_account_signer: &Keypair,
     blockhash: Arc<RwLock<Hash>>,
     slot: &AtomicU64,
-    prioritization_fees: u8,
+    prioritization_fee_proba: u8,
 ) {
     let mango_account_signer_pk = to_sp_pk(&mango_account_signer.pubkey());
     // update quotes 2x per second
     for _ in 0..quotes_per_second {
-        for c in perp_market_caches.iter() {
-            let prioritization_fee = if prioritization_fees != 0 {
-                if rand::random::<u8>() % 99 + 1 <= prioritization_fees {
-                    rand::random::<u32>() % 900 + 100
-                } else {
-                    0
-                }
-            } else {
-                0
-            };
+        let prioritization_fee_by_market = generate_random_fees(prioritization_fee_proba, perp_market_caches.len(), 100, 1000);
+        for (i,c) in perp_market_caches.iter().enumerate() {
+            let prioritization_fee = prioritization_fee_by_market[i];
             let mut tx = create_ask_bid_transaction(
                 c,
                 mango_account_pk,
@@ -173,7 +186,7 @@ pub fn send_mm_transactions(
                 sent_slot: slot.load(Ordering::Acquire),
                 market_maker: mango_account_signer_pk,
                 market: c.perp_market_pk,
-                priority_fees: prioritization_fee as u64,
+                priority_fees: prioritization_fee,
             });
             if sent.is_err() {
                 println!(
@@ -197,7 +210,7 @@ pub fn send_mm_transactions_batched(
     mango_account_signer: &Keypair,
     blockhash: Arc<RwLock<Hash>>,
     slot: &AtomicU64,
-    prioritization_fees: u8,
+    prioritization_fee_proba: u8,
 ) {
     let mut transactions = Vec::<_>::with_capacity(txs_batch_size);
 
@@ -205,26 +218,17 @@ pub fn send_mm_transactions_batched(
     // update quotes 2x per second
     for _ in 0..quotes_per_second {
         for c in perp_market_caches.iter() {
-            for _ in 0..txs_batch_size {
-                let prioritization_fee = if prioritization_fees != 0 {
-                    if rand::random::<u8>() % 99 + 1 <= prioritization_fees {
-                        rand::random::<u32>() % 900 + 100
-                    } else {
-                        0
-                    }
-                } else {
-                    0
-                };
-
-                transactions.push((
-                    create_ask_bid_transaction(
+            let prioritization_fee_for_tx = generate_random_fees(prioritization_fee_proba, txs_batch_size, 100, 1000);
+            for i in 0..txs_batch_size {
+                let prioritization_fee = prioritization_fee_for_tx[i];
+                transactions.push(
+                    (create_ask_bid_transaction(
                         c,
                         mango_account_pk,
                         &mango_account_signer,
                         prioritization_fee,
-                    ),
-                    prioritization_fee,
-                ));
+                    ),prioritization_fee)
+                );
             }
 
             if let Ok(recent_blockhash) = blockhash.read() {
@@ -277,7 +281,7 @@ pub fn start_market_making_threads(
     duration: &Duration,
     quotes_per_second: u64,
     txs_batch_size: Option<usize>,
-    prioritization_fees: u8,
+    prioritization_fee_proba: u8,
 ) -> Vec<JoinHandle<()>> {
     account_keys_parsed
         .iter()
@@ -321,7 +325,7 @@ pub fn start_market_making_threads(
                                 &mango_account_signer,
                                 blockhash.clone(),
                                 current_slot.as_ref(),
-                                prioritization_fees,
+                                prioritization_fee_proba,
                             );
                         } else {
                             send_mm_transactions(
@@ -333,7 +337,7 @@ pub fn start_market_making_threads(
                                 &mango_account_signer,
                                 blockhash.clone(),
                                 current_slot.as_ref(),
-                                prioritization_fees,
+                                prioritization_fee_proba,
                             );
                         }
 
