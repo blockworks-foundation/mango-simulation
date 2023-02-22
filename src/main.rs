@@ -13,18 +13,19 @@ use solana_bench_mango::{
     states::{BlockData, PerpMarketCache, TransactionConfirmRecord, TransactionSendRecord},
 };
 use solana_client::{
-    rpc_client::RpcClient, tpu_client::TpuClient, connection_cache::ConnectionCache,
+    connection_cache::ConnectionCache, rpc_client::RpcClient, tpu_client::TpuClient,
 };
-use solana_quic_client::{QuicPool, QuicConnectionManager, QuicConfig};
+use solana_quic_client::{QuicConfig, QuicConnectionManager, QuicPool};
 use solana_sdk::commitment_config::CommitmentConfig;
 
 use std::{
     fs,
+    net::{IpAddr, Ipv4Addr},
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
         Arc, RwLock,
     },
-    thread::{Builder, JoinHandle}, net::{IpAddr, Ipv4Addr},
+    thread::{Builder, JoinHandle},
 };
 
 fn main() {
@@ -46,6 +47,7 @@ fn main() {
         block_data_save_file,
         mango_cluster,
         txs_batch_size,
+        priority_fees_proba,
         ..
     } = &cli_config;
 
@@ -89,21 +91,20 @@ fn main() {
         None
     };
 
-    let tpu_client_pool = Arc::new(RotatingQueue::<Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>>::new(
-        number_of_tpu_clients,
-        || {
-            let quic_connection_cache = quic_connection_cache.clone();
-            Arc::new(
-                TpuClient::new_with_connection_cache(
-                    rpc_clients.get().clone(),
-                    &websocket_url,
-                    solana_client::tpu_client::TpuClientConfig::default(),
-                    quic_connection_cache.unwrap(),
-                )
-                .unwrap(),
+    let tpu_client_pool = Arc::new(RotatingQueue::<
+        Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>,
+    >::new(number_of_tpu_clients, || {
+        let quic_connection_cache = quic_connection_cache.clone();
+        Arc::new(
+            TpuClient::new_with_connection_cache(
+                rpc_clients.get().clone(),
+                &websocket_url,
+                solana_client::tpu_client::TpuClientConfig::default(),
+                quic_connection_cache.unwrap(),
             )
-        },
-    ));
+            .unwrap(),
+        )
+    }));
 
     info!(
         "accounts:{:?} markets:{:?} quotes_per_second:{:?} expected_tps:{:?} duration:{:?}",
@@ -147,6 +148,7 @@ fn main() {
         &duration,
         *quotes_per_second,
         *txs_batch_size,
+        *priority_fees_proba,
     );
     let duration = duration.clone();
     let quotes_per_second = quotes_per_second.clone();

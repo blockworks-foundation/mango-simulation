@@ -1,3 +1,5 @@
+use solana_clap_utils::input_validators::is_valid_percentage;
+
 use {
     clap::{crate_description, crate_name, App, Arg, ArgMatches},
     solana_clap_utils::input_validators::{is_url, is_url_or_moniker},
@@ -20,6 +22,7 @@ pub struct Config {
     pub block_data_save_file: String,
     pub mango_cluster: String,
     pub txs_batch_size: Option<usize>,
+    pub priority_fees_proba: u8,
 }
 
 impl Default for Config {
@@ -37,6 +40,7 @@ impl Default for Config {
             block_data_save_file: String::new(),
             mango_cluster: "testnet.0".to_string(),
             txs_batch_size: None,
+            priority_fees_proba: 0,
         }
     }
 }
@@ -168,6 +172,16 @@ pub fn build_args<'a, 'b>(version: &'b str) -> App<'a, 'b> {
                 .required(false)
                 .help("If specified, transactions are send in batches of specified size"),
         )
+        .arg(
+            Arg::with_name("prioritization-fees")
+                .long("prioritization-fees")
+                .value_name("UINT")
+                .min_values(1)
+                .validator(is_valid_percentage)
+                .takes_value(true)
+                .required(false)
+                .help("Takes percentage of transaction we want to add random prioritization fees to, prioritization fees are random number between 100-1000"),
+        )
 }
 
 /// Parses a clap `ArgMatches` structure into a `Config`
@@ -243,5 +257,10 @@ pub fn extract_args(matches: &ArgMatches) -> Config {
     args.txs_batch_size = matches
         .value_of("batch-size")
         .map(|batch_size_str| batch_size_str.parse().expect("can't parse batch-size"));
+
+    args.priority_fees_proba = match matches.value_of("prioritization-fees") {
+        Some(x) => x.parse().expect("Percentage of transactions having prioritization fees"),
+        None => 0,
+    };
     args
 }

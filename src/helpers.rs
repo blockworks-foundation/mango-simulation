@@ -161,6 +161,7 @@ pub fn write_transaction_data_into_csv(
                     slot_processed: 0,
                     successful: false,
                     timed_out: true,
+                    priority_fees: timeout_record.priority_fees,
                 })
                 .unwrap();
         }
