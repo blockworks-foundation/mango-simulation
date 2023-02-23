@@ -1,29 +1,31 @@
-use log::{error, info};
-use serde_json;
-use solana_bench_mango::{
-    cli,
-    confirmation_strategies::confirmations_by_blocks,
-    helpers::{
-        get_latest_blockhash, get_mango_market_perps_cache, start_blockhash_polling_service,
-        write_block_data_into_csv, write_transaction_data_into_csv,
+use {
+    log::{error, info},
+    serde_json,
+    solana_bench_mango::{
+        cli,
+        confirmation_strategies::confirmations_by_blocks,
+        helpers::{
+            get_latest_blockhash, get_mango_market_perps_cache, start_blockhash_polling_service,
+            write_block_data_into_csv, write_transaction_data_into_csv,
+        },
+        keeper::start_keepers,
+        mango::{AccountKeys, MangoConfig},
+        market_markers::start_market_making_threads,
+        states::{BlockData, PerpMarketCache, TransactionConfirmRecord, TransactionSendRecord},
     },
-    mango::{AccountKeys, MangoConfig},
-    market_markers::start_market_making_threads,
-    states::{BlockData, PerpMarketCache, TransactionConfirmRecord, TransactionSendRecord},
-};
-use solana_client::{
-    connection_cache::ConnectionCache, rpc_client::RpcClient, tpu_client::TpuClient,
-};
-use solana_sdk::commitment_config::CommitmentConfig;
-
-use std::{
-    fs,
-    net::{IpAddr, Ipv4Addr},
-    sync::{
-        atomic::{AtomicBool, AtomicU64, Ordering},
-        Arc, RwLock,
+    solana_client::{
+        connection_cache::ConnectionCache, rpc_client::RpcClient, tpu_client::TpuClient,
     },
-    thread::{Builder, JoinHandle},
+    solana_sdk::commitment_config::CommitmentConfig,
+    std::{
+        fs,
+        net::{IpAddr, Ipv4Addr},
+        sync::{
+            atomic::{AtomicBool, AtomicU64, Ordering},
+            Arc, RwLock,
+        },
+        thread::{Builder, JoinHandle},
+    },
 };
 
 fn main() {
@@ -46,6 +48,7 @@ fn main() {
         mango_cluster,
         txs_batch_size,
         priority_fees_proba,
+        keeper_authority,
         ..
     } = &cli_config;
 
@@ -127,6 +130,20 @@ fn main() {
 
     let perp_market_caches: Vec<PerpMarketCache> =
         get_mango_market_perps_cache(rpc_client.clone(), &mango_group_config);
+
+    // start keeper if keeper authority is present
+    let keepers_jl = if let Some(keeper_authority) = keeper_authority {
+        let jl = start_keepers(
+            exit_signal.clone(),
+            tpu_client.clone(),
+            perp_market_caches.clone(),
+            blockhash.clone(),
+            keeper_authority,
+        );
+        Some(jl)
+    } else {
+        None
+    };
 
     let (tx_record_sx, tx_record_rx) = crossbeam_channel::unbounded();
 
@@ -247,5 +264,11 @@ fn main() {
 
     if let Err(err) = blockhash_thread.join() {
         error!("blockhash join failed with: {:?}", err);
+    }
+
+    if let Some(keepers_jl) = keepers_jl {
+        if let Err(err) = keepers_jl.join() {
+            error!("keeper join failed with: {:?}", err);
+        }
     }
 }
