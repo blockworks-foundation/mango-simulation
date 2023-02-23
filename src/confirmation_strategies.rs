@@ -2,9 +2,7 @@ use std::{
     collections::HashMap,
     ops::Div,
     str::FromStr,
-    sync::{
-        Arc, RwLock,
-    },
+    sync::{Arc, RwLock},
     thread::{sleep, Builder},
     time::Duration,
 };

@@ -46,6 +46,8 @@ pub struct PerpMarketCache {
     pub price_oracle: Pubkey,
     pub root_bank: Pubkey,
     pub node_banks: Vec<Pubkey>,
+    pub bids: Pubkey,
+    pub asks: Pubkey,
 }
 
 pub struct _TransactionInfo {

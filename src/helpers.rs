@@ -252,7 +252,9 @@ pub fn get_mango_market_perps_cache(
                 .iter()
                 .map(|x| Pubkey::from_str(x.as_str()).unwrap())
                 .collect();
-            let price_oracle = Pubkey::from_str(mango_group_config.oracles[market_index].public_key.as_str()).unwrap();
+            let price_oracle =
+                Pubkey::from_str(mango_group_config.oracles[market_index].public_key.as_str())
+                    .unwrap();
             PerpMarketCache {
                 order_base_lots,
                 price,
@@ -265,6 +267,8 @@ pub fn get_mango_market_perps_cache(
                 root_bank,
                 node_banks,
                 price_oracle,
+                bids: perp_market.bids,
+                asks: perp_market.asks,
             }
         })
         .collect()
