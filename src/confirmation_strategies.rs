@@ -3,7 +3,6 @@ use std::{
     ops::Div,
     str::FromStr,
     sync::{
-        atomic::{AtomicU64, Ordering},
         Arc, RwLock,
     },
     thread::{sleep, Builder},
@@ -201,19 +200,17 @@ pub fn confirmation_by_querying_rpc(
 
 pub fn confirmations_by_blocks(
     client: Arc<RpcClient>,
-    current_slot: &AtomicU64,
     recv_limit: usize,
     tx_record_rx: Receiver<TransactionSendRecord>,
     tx_confirm_records: Arc<RwLock<Vec<TransactionConfirmRecord>>>,
     tx_timeout_records: Arc<RwLock<Vec<TransactionSendRecord>>>,
     tx_block_data: Arc<RwLock<Vec<BlockData>>>,
+    from_slot: u64,
 ) {
     let mut recv_until_confirm = recv_limit;
     let transaction_map = Arc::new(RwLock::new(
         HashMap::<Signature, TransactionSendRecord>::new(),
     ));
-    let last_slot = current_slot.load(Ordering::Acquire);
-
     while recv_until_confirm != 0 {
         match tx_record_rx.try_recv() {
             Ok(tx_record) => {
@@ -245,7 +242,7 @@ pub fn confirmations_by_blocks(
         commitment: CommitmentLevel::Confirmed,
     };
     let block_res = client
-        .get_blocks_with_commitment(last_slot, None, commitment_confirmation)
+        .get_blocks_with_commitment(from_slot, None, commitment_confirmation)
         .unwrap();
 
     let nb_blocks = block_res.len();

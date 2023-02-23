@@ -13,9 +13,8 @@ use {
         },
         thread::{Builder, JoinHandle},
     },
+    crate::{helpers::to_sdk_instruction, states::PerpMarketCache},
 };
-
-use crate::{helpers::to_sdk_instruction, states::PerpMarketCache};
 
 fn create_root_bank_update_instructions(perp_markets: &[PerpMarketCache]) -> Vec<Instruction> {
     perp_markets
@@ -34,20 +33,19 @@ fn create_root_bank_update_instructions(perp_markets: &[PerpMarketCache]) -> Vec
         .collect()
 }
 
-fn create_update_price_cache_instructions(perp_markets: &[PerpMarketCache]) -> Vec<Instruction> {
-    perp_markets
-        .iter()
-        .map(|perp_market| {
-            let ix = mango::instruction::cache_prices(
-                &perp_market.mango_program_pk,
-                &perp_market.mango_group_pk,
-                &perp_market.mango_cache_pk,
-                perp_market.node_banks.as_slice(),
-            )
-            .unwrap();
-            to_sdk_instruction(ix)
-        })
-        .collect()
+fn create_update_price_cache_instructions(perp_markets: &[PerpMarketCache]) -> Instruction {
+    let mango_program_pk = perp_markets[0].mango_program_pk;
+    let mango_group_pk = perp_markets[0].mango_group_pk;
+    let mango_cache_pk = perp_markets[0].mango_cache_pk;
+    let price_oracles = perp_markets.iter().map(|x| x.price_oracle).collect_vec();
+
+    let ix = mango::instruction::cache_prices(
+        &mango_program_pk,
+        &mango_group_pk,
+        &mango_cache_pk,
+        price_oracles.as_slice()
+    ).unwrap();
+    to_sdk_instruction(ix)
 }
 
 fn create_cache_perp_markets_instructions(perp_markets: &[PerpMarketCache]) -> Instruction {
@@ -89,7 +87,7 @@ pub fn start_keepers(
         .name("updating root bank keeper".to_string())
         .spawn(move || {
             let mut root_update_ixs = create_root_bank_update_instructions(&perp_markets);
-            let mut cache_price = create_update_price_cache_instructions(&perp_markets);
+            let cache_prices = create_update_price_cache_instructions(&perp_markets);
             let update_perp_cache = create_cache_perp_markets_instructions(&perp_markets);
 
             let blockhash = blockhash.clone();
@@ -97,7 +95,7 @@ pub fn start_keepers(
             // add prioritization instruction
             let prioritization_ix = ComputeBudgetInstruction::set_compute_unit_price(10000);
             root_update_ixs.insert(0, prioritization_ix.clone());
-            cache_price.insert(0, prioritization_ix.clone());
+
             while !exit_signal.load(Ordering::Relaxed) {
                 send_transaction(
                     tpu_client.clone(),
@@ -107,7 +105,7 @@ pub fn start_keepers(
                 );
                 send_transaction(
                     tpu_client.clone(),
-                    cache_price.as_slice(),
+                    &[prioritization_ix.clone(), cache_prices.clone(),],
                     blockhash.clone(),
                     &authority,
                 );

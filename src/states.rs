@@ -43,6 +43,7 @@ pub struct PerpMarketCache {
     pub mango_cache_pk: Pubkey,
     pub perp_market_pk: Pubkey,
     pub perp_market: PerpMarket,
+    pub price_oracle: Pubkey,
     pub root_bank: Pubkey,
     pub node_banks: Vec<Pubkey>,
 }

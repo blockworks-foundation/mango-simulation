@@ -146,6 +146,7 @@ fn main() {
     };
 
     let (tx_record_sx, tx_record_rx) = crossbeam_channel::unbounded();
+    let from_slot = current_slot.load(Ordering::Relaxed);
 
     let mm_threads: Vec<JoinHandle<()>> = start_market_making_threads(
         account_keys_parsed.clone(),
@@ -181,12 +182,12 @@ fn main() {
             //confirmation_by_querying_rpc(recv_limit, rpc_client.clone(), &tx_record_rx, tx_confirm_records.clone(), tx_timeout_records.clone());
             confirmations_by_blocks(
                 rpc_client.clone(),
-                &current_slot,
                 recv_limit,
                 tx_record_rx,
                 tx_confirm_records.clone(),
                 tx_timeout_records.clone(),
                 tx_block_data.clone(),
+                from_slot,
             );
 
             let confirmed: Vec<TransactionConfirmRecord> = {
