@@ -2,10 +2,7 @@ use std::{
     collections::HashMap,
     ops::Div,
     str::FromStr,
-    sync::{
-        atomic::{AtomicU64, Ordering},
-        Arc, RwLock,
-    },
+    sync::{Arc, RwLock},
     thread::{sleep, Builder},
     time::Duration,
 };
@@ -23,7 +20,6 @@ use solana_transaction_status::RewardType;
 
 use crate::{
     helpers::seconds_since,
-    rotating_queue::RotatingQueue,
     states::{BlockData, TransactionConfirmRecord, TransactionSendRecord},
 };
 
@@ -201,20 +197,18 @@ pub fn confirmation_by_querying_rpc(
 }
 
 pub fn confirmations_by_blocks(
-    clients: RotatingQueue<Arc<RpcClient>>,
-    current_slot: &AtomicU64,
+    client: Arc<RpcClient>,
     recv_limit: usize,
     tx_record_rx: Receiver<TransactionSendRecord>,
     tx_confirm_records: Arc<RwLock<Vec<TransactionConfirmRecord>>>,
     tx_timeout_records: Arc<RwLock<Vec<TransactionSendRecord>>>,
     tx_block_data: Arc<RwLock<Vec<BlockData>>>,
+    from_slot: u64,
 ) {
     let mut recv_until_confirm = recv_limit;
     let transaction_map = Arc::new(RwLock::new(
         HashMap::<Signature, TransactionSendRecord>::new(),
     ));
-    let last_slot = current_slot.load(Ordering::Acquire);
-
     while recv_until_confirm != 0 {
         match tx_record_rx.try_recv() {
             Ok(tx_record) => {
@@ -245,9 +239,8 @@ pub fn confirmations_by_blocks(
     let commitment_confirmation = CommitmentConfig {
         commitment: CommitmentLevel::Confirmed,
     };
-    let block_res = clients
-        .get()
-        .get_blocks_with_commitment(last_slot, None, commitment_confirmation)
+    let block_res = client
+        .get_blocks_with_commitment(from_slot, None, commitment_confirmation)
         .unwrap();
 
     let nb_blocks = block_res.len();
@@ -264,7 +257,7 @@ pub fn confirmations_by_blocks(
         .map(|x| x.to_vec())
     {
         let map = transaction_map.clone();
-        let client = clients.get().clone();
+        let client = client.clone();
         let tx_confirm_records = tx_confirm_records.clone();
         let tx_block_data = tx_block_data.clone();
         let joinble = Builder::new()

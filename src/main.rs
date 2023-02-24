@@ -1,31 +1,33 @@
-use log::{error, info};
-use serde_json;
-use solana_bench_mango::{
-    cli,
-    confirmation_strategies::confirmations_by_blocks,
-    helpers::{
-        get_latest_blockhash, get_mango_market_perps_cache, start_blockhash_polling_service,
-        write_block_data_into_csv, write_transaction_data_into_csv,
+use {
+    log::{error, info},
+    serde_json,
+    solana_bench_mango::{
+        cli,
+        confirmation_strategies::confirmations_by_blocks,
+        helpers::{
+            get_latest_blockhash, get_mango_market_perps_cache, start_blockhash_polling_service,
+            write_block_data_into_csv, write_transaction_data_into_csv,
+        },
+        keeper::start_keepers,
+        mango::{AccountKeys, MangoConfig},
+        market_markers::start_market_making_threads,
+        states::{BlockData, PerpMarketCache, TransactionConfirmRecord, TransactionSendRecord},
     },
-    mango::{AccountKeys, MangoConfig},
-    market_markers::start_market_making_threads,
-    rotating_queue::RotatingQueue,
-    states::{BlockData, PerpMarketCache, TransactionConfirmRecord, TransactionSendRecord},
-};
-use solana_client::{
-    connection_cache::ConnectionCache, rpc_client::RpcClient, tpu_client::TpuClient,
-};
-use solana_quic_client::{QuicConfig, QuicConnectionManager, QuicPool};
-use solana_sdk::commitment_config::CommitmentConfig;
-
-use std::{
-    fs,
-    net::{IpAddr, Ipv4Addr},
-    sync::{
-        atomic::{AtomicBool, AtomicU64, Ordering},
-        Arc, RwLock,
+    solana_client::{
+        connection_cache::ConnectionCache, rpc_client::RpcClient, tpu_client::TpuClient,
     },
-    thread::{Builder, JoinHandle},
+    solana_program::pubkey::Pubkey,
+    solana_sdk::commitment_config::CommitmentConfig,
+    std::{
+        fs,
+        net::{IpAddr, Ipv4Addr},
+        str::FromStr,
+        sync::{
+            atomic::{AtomicBool, AtomicU64, Ordering},
+            Arc, RwLock,
+        },
+        thread::{Builder, JoinHandle},
+    },
 };
 
 fn main() {
@@ -48,13 +50,19 @@ fn main() {
         mango_cluster,
         txs_batch_size,
         priority_fees_proba,
+        keeper_authority,
+        number_of_markers_per_mm,
         ..
     } = &cli_config;
+    let number_of_markers_per_mm = *number_of_markers_per_mm;
 
     let transaction_save_file = transaction_save_file.clone();
     let block_data_save_file = block_data_save_file.clone();
 
-    info!("Connecting to the cluster");
+    info!(
+        "Connecting to the cluster {}, {}",
+        json_rpc_url, websocket_url
+    );
 
     let account_keys_json = fs::read_to_string(account_keys).expect("unable to read accounts file");
     let account_keys_parsed: Vec<AccountKeys> =
@@ -71,13 +79,10 @@ fn main() {
         .find(|g| g.name == *mango_group_id)
         .unwrap();
 
-    let number_of_tpu_clients: usize = 1;
-    let rpc_clients = RotatingQueue::<Arc<RpcClient>>::new(number_of_tpu_clients, || {
-        Arc::new(RpcClient::new_with_commitment(
-            json_rpc_url.to_string(),
-            CommitmentConfig::confirmed(),
-        ))
-    });
+    let rpc_client = Arc::new(RpcClient::new_with_commitment(
+        json_rpc_url.to_string(),
+        CommitmentConfig::confirmed(),
+    ));
 
     let connection_cache = ConnectionCache::new_with_client_options(
         4,
@@ -91,20 +96,15 @@ fn main() {
         None
     };
 
-    let tpu_client_pool = Arc::new(RotatingQueue::<
-        Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>,
-    >::new(number_of_tpu_clients, || {
-        let quic_connection_cache = quic_connection_cache.clone();
-        Arc::new(
-            TpuClient::new_with_connection_cache(
-                rpc_clients.get().clone(),
-                &websocket_url,
-                solana_client::tpu_client::TpuClientConfig::default(),
-                quic_connection_cache.unwrap(),
-            )
-            .unwrap(),
+    let tpu_client = Arc::new(
+        TpuClient::new_with_connection_cache(
+            rpc_client.clone(),
+            &websocket_url,
+            solana_client::tpu_client::TpuClientConfig::default(),
+            quic_connection_cache.unwrap(),
         )
-    }));
+        .unwrap(),
+    );
 
     info!(
         "accounts:{:?} markets:{:?} quotes_per_second:{:?} expected_tps:{:?} duration:{:?}",
@@ -135,7 +135,34 @@ fn main() {
     let perp_market_caches: Vec<PerpMarketCache> =
         get_mango_market_perps_cache(rpc_client.clone(), &mango_group_config);
 
+    let quote_root_bank =
+        Pubkey::from_str(mango_group_config.tokens.last().unwrap().root_key.as_str()).unwrap();
+    let quote_node_banks = mango_group_config
+        .tokens
+        .last()
+        .unwrap()
+        .node_keys
+        .iter()
+        .map(|x| Pubkey::from_str(x.as_str()).unwrap())
+        .collect();
+    // start keeper if keeper authority is present
+    let keepers_jl = if let Some(keeper_authority) = keeper_authority {
+        let jl = start_keepers(
+            exit_signal.clone(),
+            tpu_client.clone(),
+            perp_market_caches.clone(),
+            blockhash.clone(),
+            keeper_authority,
+            quote_root_bank,
+            quote_node_banks,
+        );
+        Some(jl)
+    } else {
+        None
+    };
+
     let (tx_record_sx, tx_record_rx) = crossbeam_channel::unbounded();
+    let from_slot = current_slot.load(Ordering::Relaxed);
 
     let mm_threads: Vec<JoinHandle<()>> = start_market_making_threads(
         account_keys_parsed.clone(),
@@ -144,11 +171,12 @@ fn main() {
         exit_signal.clone(),
         blockhash.clone(),
         current_slot.clone(),
-        tpu_client_pool.clone(),
+        tpu_client.clone(),
         &duration,
         *quotes_per_second,
         *txs_batch_size,
         *priority_fees_proba,
+        number_of_markers_per_mm,
     );
     let duration = duration.clone();
     let quotes_per_second = quotes_per_second.clone();
@@ -164,40 +192,37 @@ fn main() {
         .name("solana-client-sender".to_string())
         .spawn(move || {
             let recv_limit = account_keys_parsed.len()
-                * perp_market_caches.len()
+                * number_of_markers_per_mm as usize
                 * duration.as_secs() as usize
                 * quotes_per_second as usize;
 
             //confirmation_by_querying_rpc(recv_limit, rpc_client.clone(), &tx_record_rx, tx_confirm_records.clone(), tx_timeout_records.clone());
             confirmations_by_blocks(
-                rpc_clients,
-                &current_slot,
+                rpc_client.clone(),
                 recv_limit,
                 tx_record_rx,
                 tx_confirm_records.clone(),
                 tx_timeout_records.clone(),
                 tx_block_data.clone(),
+                from_slot,
             );
 
             let confirmed: Vec<TransactionConfirmRecord> = {
                 let lock = tx_confirm_records.write().unwrap();
                 (*lock).clone()
             };
-            let total_signed = account_keys_parsed.len()
-                * perp_market_caches.len()
-                * duration.as_secs() as usize
-                * quotes_per_second as usize;
+
             info!(
                 "confirmed {} signatures of {} rate {}%",
                 confirmed.len(),
-                total_signed,
-                (confirmed.len() * 100) / total_signed
+                recv_limit,
+                (confirmed.len() * 100) / recv_limit
             );
             let error_count = confirmed.iter().filter(|tx| !tx.error.is_empty()).count();
             info!(
                 "errors counted {} rate {}%",
                 error_count,
-                (error_count as usize * 100) / total_signed
+                (error_count as usize * 100) / recv_limit
             );
             let timeouts: Vec<TransactionSendRecord> = {
                 let timeouts = tx_timeout_records.clone();
@@ -207,7 +232,7 @@ fn main() {
             info!(
                 "timeouts counted {} rate {}%",
                 timeouts.len(),
-                (timeouts.len() * 100) / total_signed
+                (timeouts.len() * 100) / recv_limit
             );
 
             // let mut confirmation_times = confirmed
@@ -254,5 +279,11 @@ fn main() {
 
     if let Err(err) = blockhash_thread.join() {
         error!("blockhash join failed with: {:?}", err);
+    }
+
+    if let Some(keepers_jl) = keepers_jl {
+        if let Err(err) = keepers_jl.join() {
+            error!("keeper join failed with: {:?}", err);
+        }
     }
 }

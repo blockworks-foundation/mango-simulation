@@ -1,8 +1,6 @@
-use solana_clap_utils::input_validators::is_valid_percentage;
-
 use {
     clap::{crate_description, crate_name, App, Arg, ArgMatches},
-    solana_clap_utils::input_validators::{is_url, is_url_or_moniker},
+    solana_clap_utils::input_validators::{is_url, is_url_or_moniker, is_valid_percentage},
     solana_cli_config::{ConfigInput, CONFIG_FILE},
     solana_sdk::signature::{read_keypair_file, Keypair},
     std::{net::SocketAddr, process::exit, time::Duration},
@@ -23,6 +21,8 @@ pub struct Config {
     pub mango_cluster: String,
     pub txs_batch_size: Option<usize>,
     pub priority_fees_proba: u8,
+    pub keeper_authority: Option<Keypair>,
+    pub number_of_markers_per_mm: u8,
 }
 
 impl Default for Config {
@@ -41,6 +41,8 @@ impl Default for Config {
             mango_cluster: "testnet.0".to_string(),
             txs_batch_size: None,
             priority_fees_proba: 0,
+            keeper_authority: None,
+            number_of_markers_per_mm: 5,
         }
     }
 }
@@ -51,7 +53,7 @@ pub fn build_args<'a, 'b>(version: &'b str) -> App<'a, 'b> {
         .about(crate_description!())
         .version(version)
         .arg({
-            let arg = Arg::with_name("config_file")
+            let arg = Arg::with_name("config-file")
                 .short("C")
                 .long("config")
                 .value_name("FILEPATH")
@@ -65,7 +67,7 @@ pub fn build_args<'a, 'b>(version: &'b str) -> App<'a, 'b> {
             }
         })
         .arg(
-            Arg::with_name("json_rpc_url")
+            Arg::with_name("json-rpc-url")
                 .short("u")
                 .long("url")
                 .value_name("URL_OR_MONIKER")
@@ -78,7 +80,7 @@ pub fn build_args<'a, 'b>(version: &'b str) -> App<'a, 'b> {
                 ),
         )
         .arg(
-            Arg::with_name("websocket_url")
+            Arg::with_name("websocket-url")
                 .long("ws")
                 .value_name("URL")
                 .takes_value(true)
@@ -100,9 +102,10 @@ pub fn build_args<'a, 'b>(version: &'b str) -> App<'a, 'b> {
             Arg::with_name("identity")
                 .short("i")
                 .long("identity")
-                .value_name("PATH")
+                .value_name("FILEPATH")
                 .takes_value(true)
-                .help("File containing a client identity (keypair)"),
+                .help("Identity used in the QUIC connection. Identity with a lot of stake has a \
+                better chance to send transaction to the leader"),
         )
         .arg(
             Arg::with_name("duration")
@@ -113,15 +116,15 @@ pub fn build_args<'a, 'b>(version: &'b str) -> App<'a, 'b> {
                 .help("Seconds to run benchmark, then exit; default is forever"),
         )
         .arg(
-            Arg::with_name("qoutes_per_second")
+            Arg::with_name("quotes-per-second")
                 .short("q")
-                .long("qoutes_per_second")
+                .long("quotes-per-second")
                 .value_name("QPS")
                 .takes_value(true)
                 .help("Number of quotes per second"),
         )
         .arg(
-            Arg::with_name("account_keys")
+            Arg::with_name("account-keys")
                 .short("a")
                 .long("accounts")
                 .value_name("FILENAME")
@@ -130,7 +133,7 @@ pub fn build_args<'a, 'b>(version: &'b str) -> App<'a, 'b> {
                 .help("Read account keys from JSON file generated with mango-client-v3"),
         )
         .arg(
-            Arg::with_name("mango_keys")
+            Arg::with_name("mango-keys")
                 .short("m")
                 .long("mango")
                 .value_name("FILENAME")
@@ -139,18 +142,18 @@ pub fn build_args<'a, 'b>(version: &'b str) -> App<'a, 'b> {
                 .help("Read mango keys from JSON file generated with mango-client-v3"),
         )
         .arg(
-            Arg::with_name("transaction_save_file")
+            Arg::with_name("transaction-save-file")
                 .short("tsf")
-                .long("transaction_save_file")
+                .long("transaction-save-file")
                 .value_name("FILENAME")
                 .takes_value(true)
                 .required(false)
                 .help("To save details of all transactions during a run"),
         )
         .arg(
-            Arg::with_name("block_data_save_file")
+            Arg::with_name("block-data-save-file")
                 .short("bdsf")
-                .long("block_data_save_file")
+                .long("block-data-save-file")
                 .value_name("FILENAME")
                 .takes_value(true)
                 .required(false)
@@ -180,7 +183,26 @@ pub fn build_args<'a, 'b>(version: &'b str) -> App<'a, 'b> {
                 .validator(is_valid_percentage)
                 .takes_value(true)
                 .required(false)
-                .help("Takes percentage of transaction we want to add random prioritization fees to, prioritization fees are random number between 100-1000"),
+                .help("Takes percentage of transaction we want to add random prioritization fees to, prioritization fees are random number between 100-1000")
+        )
+        .arg(
+            Arg::with_name("keeper-authority")
+                .long("keeper-authority")
+                .short("ka")
+                .value_name("FILEPATH")
+                .takes_value(true)
+                .required(false)
+                .help(
+                    "If specified, authority keypair would be used to pay for keeper transactions",
+                ),
+        )
+        .arg(
+            Arg::with_name("markets-per-mm")
+                .long("markets-per-mm")
+                .value_name("UINT")
+                .takes_value(true)
+                .required(false)
+                .help("Number of markets a market maker will trade on at a time"),
         )
 }
 
@@ -192,21 +214,21 @@ pub fn build_args<'a, 'b>(version: &'b str) -> App<'a, 'b> {
 pub fn extract_args(matches: &ArgMatches) -> Config {
     let mut args = Config::default();
 
-    let config = if let Some(config_file) = matches.value_of("config_file") {
+    let config = if let Some(config_file) = matches.value_of("config-file") {
         solana_cli_config::Config::load(config_file).unwrap_or_default()
     } else {
         solana_cli_config::Config::default()
     };
     let (_, json_rpc_url) = ConfigInput::compute_json_rpc_url_setting(
-        matches.value_of("json_rpc_url").unwrap_or(""),
+        matches.value_of("json-rpc-url").unwrap_or(""),
         &config.json_rpc_url,
     );
     args.json_rpc_url = json_rpc_url;
 
     let (_, websocket_url) = ConfigInput::compute_websocket_url_setting(
-        matches.value_of("websocket_url").unwrap_or(""),
+        matches.value_of("websocket-url").unwrap_or(""),
         &config.websocket_url,
-        matches.value_of("json_rpc_url").unwrap_or(""),
+        matches.value_of("json-rpc-url").unwrap_or(""),
         &config.json_rpc_url,
     );
     args.websocket_url = websocket_url;
@@ -235,17 +257,17 @@ pub fn extract_args(matches: &ArgMatches) -> Config {
         );
     }
 
-    if let Some(qps) = matches.value_of("qoutes_per_second") {
-        args.quotes_per_second = qps.parse().expect("can't parse qoutes_per_second");
+    if let Some(qps) = matches.value_of("quotes-per-second") {
+        args.quotes_per_second = qps.parse().expect("can't parse quotes-per-second");
     }
 
-    args.account_keys = matches.value_of("account_keys").unwrap().to_string();
-    args.mango_keys = matches.value_of("mango_keys").unwrap().to_string();
-    args.transaction_save_file = match matches.value_of("transaction_save_file") {
+    args.account_keys = matches.value_of("account-keys").unwrap().to_string();
+    args.mango_keys = matches.value_of("mango-keys").unwrap().to_string();
+    args.transaction_save_file = match matches.value_of("transaction-save-file") {
         Some(x) => x.to_string(),
         None => String::new(),
     };
-    args.block_data_save_file = match matches.value_of("block_data_save_file") {
+    args.block_data_save_file = match matches.value_of("block-data-save-file") {
         Some(x) => x.to_string(),
         None => String::new(),
     };
@@ -259,8 +281,23 @@ pub fn extract_args(matches: &ArgMatches) -> Config {
         .map(|batch_size_str| batch_size_str.parse().expect("can't parse batch-size"));
 
     args.priority_fees_proba = match matches.value_of("prioritization-fees") {
-        Some(x) => x.parse().expect("Percentage of transactions having prioritization fees"),
+        Some(x) => x
+            .parse()
+            .expect("Percentage of transactions having prioritization fees"),
         None => 0,
+    };
+    let (_, kp_auth_path) = ConfigInput::compute_keypair_path_setting(
+        matches.value_of("keeper-authority").unwrap_or(""),
+        &config.keypair_path,
+    );
+
+    args.keeper_authority = read_keypair_file(kp_auth_path.clone()).ok();
+
+    args.number_of_markers_per_mm = match matches.value_of("markets-per-mm") {
+        Some(x) => x
+            .parse()
+            .expect("can't parse number of markets per market maker"),
+        None => 5,
     };
     args
 }
