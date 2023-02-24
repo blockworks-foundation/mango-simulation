@@ -51,8 +51,10 @@ fn main() {
         txs_batch_size,
         priority_fees_proba,
         keeper_authority,
+        number_of_markers_per_mm,
         ..
     } = &cli_config;
+    let number_of_markers_per_mm = *number_of_markers_per_mm;
 
     let transaction_save_file = transaction_save_file.clone();
     let block_data_save_file = block_data_save_file.clone();
@@ -133,8 +135,12 @@ fn main() {
     let perp_market_caches: Vec<PerpMarketCache> =
         get_mango_market_perps_cache(rpc_client.clone(), &mango_group_config);
 
-    let quote_root_bank = Pubkey::from_str(mango_group_config.tokens.last().unwrap().root_key.as_str()).unwrap();
-    let quote_node_banks = mango_group_config.tokens.last().unwrap()
+    let quote_root_bank =
+        Pubkey::from_str(mango_group_config.tokens.last().unwrap().root_key.as_str()).unwrap();
+    let quote_node_banks = mango_group_config
+        .tokens
+        .last()
+        .unwrap()
         .node_keys
         .iter()
         .map(|x| Pubkey::from_str(x.as_str()).unwrap())
@@ -170,6 +176,7 @@ fn main() {
         *quotes_per_second,
         *txs_batch_size,
         *priority_fees_proba,
+        number_of_markers_per_mm,
     );
     let duration = duration.clone();
     let quotes_per_second = quotes_per_second.clone();
@@ -185,7 +192,7 @@ fn main() {
         .name("solana-client-sender".to_string())
         .spawn(move || {
             let recv_limit = account_keys_parsed.len()
-                * perp_market_caches.len()
+                * number_of_markers_per_mm as usize
                 * duration.as_secs() as usize
                 * quotes_per_second as usize;
 
@@ -204,21 +211,18 @@ fn main() {
                 let lock = tx_confirm_records.write().unwrap();
                 (*lock).clone()
             };
-            let total_signed = account_keys_parsed.len()
-                * perp_market_caches.len()
-                * duration.as_secs() as usize
-                * quotes_per_second as usize;
+
             info!(
                 "confirmed {} signatures of {} rate {}%",
                 confirmed.len(),
-                total_signed,
-                (confirmed.len() * 100) / total_signed
+                recv_limit,
+                (confirmed.len() * 100) / recv_limit
             );
             let error_count = confirmed.iter().filter(|tx| !tx.error.is_empty()).count();
             info!(
                 "errors counted {} rate {}%",
                 error_count,
-                (error_count as usize * 100) / total_signed
+                (error_count as usize * 100) / recv_limit
             );
             let timeouts: Vec<TransactionSendRecord> = {
                 let timeouts = tx_timeout_records.clone();
@@ -228,7 +232,7 @@ fn main() {
             info!(
                 "timeouts counted {} rate {}%",
                 timeouts.len(),
-                (timeouts.len() * 100) / total_signed
+                (timeouts.len() * 100) / recv_limit
             );
 
             // let mut confirmation_times = confirmed

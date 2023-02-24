@@ -16,7 +16,7 @@ use mango::{
     instruction::{cancel_all_perp_orders, place_perp_order2},
     matching::Side,
 };
-use rand::{distributions::Uniform, prelude::Distribution};
+use rand::{distributions::Uniform, prelude::Distribution, seq::SliceRandom};
 use solana_client::tpu_client::TpuClient;
 use solana_program::pubkey::Pubkey;
 use solana_quic_client::{QuicConfig, QuicConnectionManager, QuicPool};
@@ -290,7 +290,9 @@ pub fn start_market_making_threads(
     quotes_per_second: u64,
     txs_batch_size: Option<usize>,
     prioritization_fee_proba: u8,
+    number_of_markers_per_mm: u8,
 ) -> Vec<JoinHandle<()>> {
+    let mut rng = rand::thread_rng();
     account_keys_parsed
         .iter()
         .map(|account_keys| {
@@ -312,6 +314,10 @@ pub fn start_market_making_threads(
             );
             //sleep(Duration::from_secs(10));
             let tx_record_sx = tx_record_sx.clone();
+            let perp_market_caches = perp_market_caches
+                .choose_multiple(&mut rng, number_of_markers_per_mm as usize)
+                .map(|x| x.clone())
+                .collect_vec();
 
             Builder::new()
                 .name("solana-client-sender".to_string())

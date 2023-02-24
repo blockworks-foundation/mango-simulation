@@ -22,6 +22,7 @@ pub struct Config {
     pub txs_batch_size: Option<usize>,
     pub priority_fees_proba: u8,
     pub keeper_authority: Option<Keypair>,
+    pub number_of_markers_per_mm: u8,
 }
 
 impl Default for Config {
@@ -41,6 +42,7 @@ impl Default for Config {
             txs_batch_size: None,
             priority_fees_proba: 0,
             keeper_authority: None,
+            number_of_markers_per_mm: 5,
         }
     }
 }
@@ -194,6 +196,14 @@ pub fn build_args<'a, 'b>(version: &'b str) -> App<'a, 'b> {
                     "If specified, authority keypair would be used to pay for keeper transactions",
                 ),
         )
+        .arg(
+            Arg::with_name("markets-per-mm")
+                .long("markets-per-mm")
+                .value_name("UINT")
+                .takes_value(true)
+                .required(false)
+                .help("Number of markets a market maker will trade on at a time"),
+        )
 }
 
 /// Parses a clap `ArgMatches` structure into a `Config`
@@ -282,5 +292,12 @@ pub fn extract_args(matches: &ArgMatches) -> Config {
     );
 
     args.keeper_authority = read_keypair_file(kp_auth_path.clone()).ok();
+
+    args.number_of_markers_per_mm = match matches.value_of("markets-per-mm") {
+        Some(x) => x
+            .parse()
+            .expect("can't parse number of markets per market maker"),
+        None => 5,
+    };
     args
 }
