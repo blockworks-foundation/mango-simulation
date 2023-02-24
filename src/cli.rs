@@ -102,7 +102,8 @@ pub fn build_args<'a, 'b>(version: &'b str) -> App<'a, 'b> {
                 .long("identity")
                 .value_name("FILEPATH")
                 .takes_value(true)
-                .help("Identity used to connect with QUIC connection, identity with lot of stakes have better chances to send transaction to the leader"),
+                .help("Identity used in the QUIC connection. Identity with a lot of stake has a \
+                better chance to send transaction to the leader"),
         )
         .arg(
             Arg::with_name("duration")

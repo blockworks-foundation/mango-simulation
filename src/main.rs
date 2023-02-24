@@ -16,10 +16,12 @@ use {
     solana_client::{
         connection_cache::ConnectionCache, rpc_client::RpcClient, tpu_client::TpuClient,
     },
+    solana_program::pubkey::Pubkey,
     solana_sdk::commitment_config::CommitmentConfig,
     std::{
         fs,
         net::{IpAddr, Ipv4Addr},
+        str::FromStr,
         sync::{
             atomic::{AtomicBool, AtomicU64, Ordering},
             Arc, RwLock,
@@ -131,6 +133,12 @@ fn main() {
     let perp_market_caches: Vec<PerpMarketCache> =
         get_mango_market_perps_cache(rpc_client.clone(), &mango_group_config);
 
+    let quote_root_bank = Pubkey::from_str(mango_group_config.tokens.last().unwrap().root_key.as_str()).unwrap();
+    let quote_node_banks = mango_group_config.tokens.last().unwrap()
+        .node_keys
+        .iter()
+        .map(|x| Pubkey::from_str(x.as_str()).unwrap())
+        .collect();
     // start keeper if keeper authority is present
     let keepers_jl = if let Some(keeper_authority) = keeper_authority {
         let jl = start_keepers(
@@ -139,6 +147,8 @@ fn main() {
             perp_market_caches.clone(),
             blockhash.clone(),
             keeper_authority,
+            quote_root_bank,
+            quote_node_banks,
         );
         Some(jl)
     } else {
