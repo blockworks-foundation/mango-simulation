@@ -13,6 +13,7 @@ use {
         market_markers::start_market_making_threads,
         states::{BlockData, PerpMarketCache, TransactionConfirmRecord, TransactionSendRecord},
     },
+    solana_metrics::{datapoint_info},
     solana_client::{
         connection_cache::ConnectionCache, rpc_client::RpcClient, tpu_client::TpuClient,
     },
@@ -29,6 +30,29 @@ use {
         thread::{Builder, JoinHandle},
     },
 };
+
+#[derive(Default)]
+struct MangoBencherStats {
+    recv_limit: usize,
+    num_confirmed_txs: usize,
+    num_error_txs: usize,
+    num_timeout_txs: usize,
+}
+
+impl MangoBencherStats {
+    fn report(&self, name: &'static str) {
+        datapoint_info!(
+            name,
+            ("recv_limit", self.recv_limit, i64),
+            ("num_confirmed_txs", self.num_confirmed_txs, i64),
+            ("num_error_txs", self.num_error_txs, i64),
+            ("num_timeout_txs", self.num_timeout_txs, i64),
+            ("percent_confirmed_txs", (self.num_confirmed_txs * 100)/self.recv_limit, i64),
+            ("percent_error_txs", (self.num_error_txs * 100)/self.recv_limit, i64),
+            ("percent_timeout_txs", (self.num_timeout_txs * 100)/self.recv_limit, i64),
+        )
+    }
+}
 
 fn main() {
     solana_logger::setup_with_default("solana=info");
@@ -191,7 +215,9 @@ fn main() {
     let confirmation_thread = Builder::new()
         .name("solana-client-sender".to_string())
         .spawn(move || {
-            let recv_limit = account_keys_parsed.len()
+            let mut stats = MangoBencherStats::default();
+
+            stats.recv_limit = account_keys_parsed.len()
                 * number_of_markers_per_mm as usize
                 * duration.as_secs() as usize
                 * quotes_per_second as usize;
@@ -199,7 +225,7 @@ fn main() {
             //confirmation_by_querying_rpc(recv_limit, rpc_client.clone(), &tx_record_rx, tx_confirm_records.clone(), tx_timeout_records.clone());
             confirmations_by_blocks(
                 rpc_client.clone(),
-                recv_limit,
+                stats.recv_limit,
                 tx_record_rx,
                 tx_confirm_records.clone(),
                 tx_timeout_records.clone(),
@@ -211,29 +237,32 @@ fn main() {
                 let lock = tx_confirm_records.write().unwrap();
                 (*lock).clone()
             };
+            stats.num_confirmed_txs = confirmed.len();
 
             info!(
                 "confirmed {} signatures of {} rate {}%",
-                confirmed.len(),
-                recv_limit,
-                (confirmed.len() * 100) / recv_limit
+                stats.num_confirmed_txs,
+                stats.recv_limit,
+                (stats.num_confirmed_txs * 100) / stats.recv_limit
             );
-            let error_count = confirmed.iter().filter(|tx| !tx.error.is_empty()).count();
+            stats.num_error_txs = confirmed.iter().filter(|tx| !tx.error.is_empty()).count();
             info!(
                 "errors counted {} rate {}%",
-                error_count,
-                (error_count as usize * 100) / recv_limit
+                stats.num_error_txs,
+                (stats.num_error_txs as usize * 100) / stats.recv_limit
             );
             let timeouts: Vec<TransactionSendRecord> = {
                 let timeouts = tx_timeout_records.clone();
                 let lock = timeouts.write().unwrap();
                 (*lock).clone()
             };
+            stats.num_timeout_txs = timeouts.len();
             info!(
                 "timeouts counted {} rate {}%",
-                timeouts.len(),
-                (timeouts.len() * 100) / recv_limit
+                stats.num_timeout_txs,
+                (stats.num_timeout_txs * 100) / stats.recv_limit
             );
+            stats.report("mango-bencher");
 
             // let mut confirmation_times = confirmed
             //     .iter()
