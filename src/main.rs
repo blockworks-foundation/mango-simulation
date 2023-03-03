@@ -20,6 +20,8 @@ use {
     solana_program::pubkey::Pubkey,
     solana_sdk::commitment_config::CommitmentConfig,
     std::{
+        thread::sleep,
+        time::Duration,
         fs,
         net::{IpAddr, Ipv4Addr},
         str::FromStr,
@@ -50,7 +52,7 @@ impl MangoBencherStats {
             ("percent_confirmed_txs", (self.num_confirmed_txs * 100)/self.recv_limit, i64),
             ("percent_error_txs", (self.num_error_txs * 100)/self.recv_limit, i64),
             ("percent_timeout_txs", (self.num_timeout_txs * 100)/self.recv_limit, i64),
-        )
+        );
     }
 }
 
@@ -263,6 +265,9 @@ fn main() {
                 (stats.num_timeout_txs * 100) / stats.recv_limit
             );
             stats.report("mango-bencher");
+            // metrics are submitted every 10s,
+            // it is necessary only because we do it once before the end of the execution
+            sleep(Duration::from_secs(10));
 
             // let mut confirmation_times = confirmed
             //     .iter()
