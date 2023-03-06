@@ -28,7 +28,7 @@ pub fn start(
     exit_signal: Arc<AtomicBool>,
     blockhash: Arc<RwLock<Hash>>,
     current_slot: Arc<AtomicU64>,
-    tpu_client_pool: Arc<RotatingQueue<Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>>>,
+    tpu_client: Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>,
     group: &GroupConfig,
     identity: &Keypair,
 ) {
@@ -62,7 +62,6 @@ pub fn start(
 
             if let Ok(ixs) = instruction_receiver.recv() {
                 // TODO add priority fee
-                let client = tpu_client_pool.get();
 
                 let tx = Transaction::new_signed_with_payer(
                     &ixs,
@@ -78,7 +77,7 @@ pub fn start(
                 //     market_maker: identity.pubkey(),
                 //     market: c.perp_market_pk,
                 // });
-                let ok = client.send_transaction(&tx);
+                let ok = tpu_client.send_transaction(&tx);
                 info!("crank-tx-sender tx={:?} ok={ok}", tx.signatures[0]);
                 
             }

@@ -6,6 +6,7 @@ pub mod confirmation_strategies;
 pub mod crank;
 pub mod grpc_plugin_source;
 pub mod helpers;
+pub mod keeper;
 pub mod mango;
 pub mod mango_v3_perp_crank_sink;
 pub mod market_markers;

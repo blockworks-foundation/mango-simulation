@@ -12,6 +12,7 @@ pub struct TransactionSendRecord {
     pub sent_slot: Slot,
     pub market_maker: Pubkey,
     pub market: Pubkey,
+    pub priority_fees: u64,
 }
 
 #[derive(Clone, Serialize)]
@@ -29,6 +30,7 @@ pub struct TransactionConfirmRecord {
     pub block_hash: String,
     pub slot_processed: Slot,
     pub timed_out: bool,
+    pub priority_fees: u64,
 }
 
 #[derive(Clone)]
@@ -41,6 +43,11 @@ pub struct PerpMarketCache {
     pub mango_cache_pk: Pubkey,
     pub perp_market_pk: Pubkey,
     pub perp_market: PerpMarket,
+    pub price_oracle: Pubkey,
+    pub root_bank: Pubkey,
+    pub node_banks: Vec<Pubkey>,
+    pub bids: Pubkey,
+    pub asks: Pubkey,
 }
 
 pub struct _TransactionInfo {
