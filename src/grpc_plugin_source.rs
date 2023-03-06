@@ -55,6 +55,7 @@ pub struct GrpcSourceConfig {
     pub name: String,
     pub connection_string: String,
     pub retry_connection_sleep_secs: u64,
+    pub token: String,
     pub tls: Option<TlsConfig>,
 }
 
@@ -144,7 +145,6 @@ async fn get_snapshot_gma(
 
 async fn feed_data_geyser(
     grpc_config: &GrpcSourceConfig,
-    tls_config: Option<ClientTlsConfig>,
     snapshot_config: &SnapshotSourceConfig,
     filter_config: &FilterConfig,
     sender: async_channel::Sender<Message>,
@@ -159,16 +159,16 @@ async fn feed_data_geyser(
             .expect("reading connection string from env"),
         _ => snapshot_config.rpc_http_url.clone(),
     };
-    info!("connecting {}", connection_string);
+    info!("connecting to {} tls={:?}", connection_string, grpc_config.tls);
     let endpoint = Channel::from_shared(connection_string)?;
-    let channel = if let Some(tls) = tls_config {
-        endpoint.tls_config(tls)?
+    let channel = if let Some(tls) = &grpc_config.tls {
+        endpoint.tls_config(make_tls_config(&tls))?
     } else {
         endpoint
     }
     .connect()
     .await?;
-    let token: MetadataValue<_> = "eed31807f710e4bb098779fb9f67".parse()?;
+    let token: MetadataValue<_> = grpc_config.token.parse()?;
     let mut client = GeyserClient::with_interceptor(channel, move |mut req: Request<()>| {
         req.metadata_mut().insert("x-token", token.clone());
         Ok(req)
@@ -190,11 +190,14 @@ async fn feed_data_geyser(
     let mut slots = HashMap::new();
     slots.insert("client".to_owned(), SubscribeRequestFilterSlots {});
     let blocks = HashMap::new();
+    let blocks_meta = HashMap::new();
     let transactions = HashMap::new();
+    
 
     let request = SubscribeRequest {
         accounts,
         blocks,
+        blocks_meta,
         slots,
         transactions,
     };
@@ -328,7 +331,9 @@ async fn feed_data_geyser(
                         write.write_version = write_version_mapping.slot as u64;
                         write_version_mapping.slot += 1;
                     },
+                    UpdateOneof::Ping(_) => {},
                     UpdateOneof::Block(_) => {},
+                    UpdateOneof::BlockMeta(_) => {},
                     UpdateOneof::Transaction(_) => {},
                 }
                 sender.send(Message::GrpcUpdate(update)).await.expect("send success");
@@ -437,10 +442,7 @@ pub async fn process_events(
         let msg_sender = msg_sender.clone();
         let snapshot_source = config.snapshot.clone();
         let metrics_sender = metrics_sender.clone();
-        let f = filter_config.clone();
-
-        // Make TLS config if configured
-        let tls_config = grpc_source.tls.as_ref().map(make_tls_config);
+        let filter_config = filter_config.clone();
 
         tokio::spawn(async move {
             let mut metric_retries = metrics_sender.register_u64(
@@ -455,9 +457,8 @@ pub async fn process_events(
                 metric_connected.set(true);
                 let out = feed_data_geyser(
                     &grpc_source,
-                    tls_config.clone(),
                     &snapshot_source,
-                    &f,
+                    &filter_config,
                     msg_sender.clone(),
                 );
                 let result = out.await;
@@ -578,7 +579,9 @@ pub async fn process_events(
                             .await
                             .expect("send success");
                     }
+                    UpdateOneof::Ping(_) => {}
                     UpdateOneof::Block(_) => {}
+                    UpdateOneof::BlockMeta(_) => {}
                     UpdateOneof::Transaction(_) => {}
                 }
             }

@@ -10,7 +10,7 @@ use solana_bench_mango::{
     mango::{AccountKeys, MangoConfig},
     market_markers::start_market_making_threads,
     rotating_queue::RotatingQueue,
-    states::{BlockData, PerpMarketCache, TransactionConfirmRecord, TransactionSendRecord},
+    states::{BlockData, PerpMarketCache, TransactionConfirmRecord, TransactionSendRecord}, crank, account_write_filter,
 };
 use solana_client::{
     rpc_client::RpcClient, tpu_client::TpuClient, connection_cache::ConnectionCache,
@@ -27,7 +27,8 @@ use std::{
     thread::{Builder, JoinHandle}, net::{IpAddr, Ipv4Addr},
 };
 
-fn main() {
+#[tokio::main]
+async fn main() {
     solana_logger::setup_with_default("solana=info");
     solana_metrics::set_panic_hook("bench-mango", /*version:*/ None);
 
@@ -132,14 +133,24 @@ fn main() {
     );
 
     let perp_market_caches: Vec<PerpMarketCache> =
-        get_mango_market_perps_cache(rpc_client.clone(), &mango_group_config);
+        get_mango_market_perps_cache(rpc_client.clone(), mango_group_config);
 
     let (tx_record_sx, tx_record_rx) = crossbeam_channel::unbounded();
+
+    crank::start(
+        tx_record_sx.clone(),
+        exit_signal.clone(),
+        blockhash.clone(),
+        current_slot.clone(),
+        tpu_client_pool.clone(),
+        mango_group_config,
+        id
+    );
 
     let mm_threads: Vec<JoinHandle<()>> = start_market_making_threads(
         account_keys_parsed.clone(),
         perp_market_caches.clone(),
-        tx_record_sx,
+        tx_record_sx.clone(),
         exit_signal.clone(),
         blockhash.clone(),
         current_slot.clone(),
@@ -148,6 +159,9 @@ fn main() {
         *quotes_per_second,
         *txs_batch_size,
     );
+
+
+
     let duration = duration.clone();
     let quotes_per_second = quotes_per_second.clone();
     let account_keys_parsed = account_keys_parsed.clone();

@@ -26,7 +26,7 @@ pub struct MangoConfig {
 pub struct GroupConfig {
     pub name: String,
     pub public_key: String,
-    pub cache_pk: String,
+    pub cache_key: String,
     pub mango_program_id: String,
     pub serum_program_id: String,
     pub oracles: Vec<OracleConfig>,

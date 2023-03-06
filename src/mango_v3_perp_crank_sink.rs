@@ -6,7 +6,7 @@ use std::{
 };
 
 use arrayref::array_ref;
-use async_channel::Sender;
+use crossbeam_channel::Sender;
 use async_trait::async_trait;
 use mango::{
   instruction::consume_events,
@@ -126,7 +126,7 @@ impl AccountWriteSink for MangoV3PerpCrankSink {
       //     event_queue.iter().count()
       // );
 
-      if let Err(e) = self.instruction_sender.send(vec![ix?]).await {
+      if let Err(e) = self.instruction_sender.send(vec![ix?]) {
           return Err(e.to_string());
       }
 
