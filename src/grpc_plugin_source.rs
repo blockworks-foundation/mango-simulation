@@ -56,7 +56,6 @@ pub struct GrpcSourceConfig {
     pub connection_string: String,
     pub retry_connection_sleep_secs: u64,
     pub token: String,
-    pub tls: Option<TlsConfig>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -159,15 +158,19 @@ async fn feed_data_geyser(
             .expect("reading connection string from env"),
         _ => snapshot_config.rpc_http_url.clone(),
     };
-    info!("connecting to {} tls={:?}", connection_string, grpc_config.tls);
-    let endpoint = Channel::from_shared(connection_string)?;
-    let channel = if let Some(tls) = &grpc_config.tls {
-        endpoint.tls_config(make_tls_config(&tls))?
-    } else {
-        endpoint
-    }
-    .connect()
-    .await?;
+    info!("connecting to {}", connection_string);
+
+    let res = Channel::from_shared(connection_string.clone());
+    let endpoint = res.map(|e| {
+            if e.uri().scheme_str() == Some("https") {
+                info!("enable tls");
+                e.tls_config(ClientTlsConfig::new())
+            } else {
+                Ok(e)
+            }
+        })??;
+    let channel = endpoint.connect_lazy();
+
     let token: MetadataValue<_> = grpc_config.token.parse()?;
     let mut client = GeyserClient::with_interceptor(channel, move |mut req: Request<()>| {
         req.metadata_mut().insert("x-token", token.clone());
@@ -240,7 +243,7 @@ async fn feed_data_geyser(
     let mut snapshot_gma = future::Fuse::terminated();
     let mut snapshot_gpa = future::Fuse::terminated();
 
-    // The plugin sends a ping every 5s or so
+    // The plugin sends a ping every 10s
     let fatal_idle_timeout = Duration::from_secs(60);
 
     // Highest slot that an account write came in for.
@@ -267,6 +270,7 @@ async fn feed_data_geyser(
             update = update_stream.next() => {
                 use geyser::{subscribe_update::UpdateOneof};
                 let mut update = update.ok_or(anyhow::anyhow!("geyser plugin has closed the stream"))??;
+                trace!("update={:?}", update);
                 match update.update_oneof.as_mut().expect("invalid grpc") {
                     UpdateOneof::Slot(slot_update) => {
                         let status = slot_update.status;
@@ -462,7 +466,7 @@ pub async fn process_events(
                     msg_sender.clone(),
                 );
                 let result = out.await;
-                assert!(result.is_err());
+                // assert!(result.is_err());
                 if let Err(err) = result {
                     warn!(
                         "error during communication with the geyser plugin. retrying. {:?}",
