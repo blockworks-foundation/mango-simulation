@@ -65,4 +65,3 @@ pub struct MarketConfig {
     pub asks_key: String,
     pub events_key: String,
 }
-

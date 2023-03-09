@@ -162,13 +162,13 @@ async fn feed_data_geyser(
 
     let res = Channel::from_shared(connection_string.clone());
     let endpoint = res.map(|e| {
-            if e.uri().scheme_str() == Some("https") {
-                info!("enable tls");
-                e.tls_config(ClientTlsConfig::new())
-            } else {
-                Ok(e)
-            }
-        })??;
+        if e.uri().scheme_str() == Some("https") {
+            info!("enable tls");
+            e.tls_config(ClientTlsConfig::new())
+        } else {
+            Ok(e)
+        }
+    })??;
     let channel = endpoint.connect_lazy();
 
     let token: MetadataValue<_> = grpc_config.token.parse()?;
@@ -195,7 +195,6 @@ async fn feed_data_geyser(
     let blocks = HashMap::new();
     let blocks_meta = HashMap::new();
     let transactions = HashMap::new();
-    
 
     let request = SubscribeRequest {
         accounts,

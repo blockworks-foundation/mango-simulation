@@ -14,15 +14,13 @@ use {
         market_markers::start_market_making_threads,
         states::{BlockData, PerpMarketCache, TransactionConfirmRecord, TransactionSendRecord},
     },
-    solana_metrics::{datapoint_info},
     solana_client::{
         connection_cache::ConnectionCache, rpc_client::RpcClient, tpu_client::TpuClient,
     },
+    solana_metrics::datapoint_info,
     solana_program::pubkey::Pubkey,
     solana_sdk::commitment_config::CommitmentConfig,
     std::{
-        thread::sleep,
-        time::Duration,
         fs,
         net::{IpAddr, Ipv4Addr},
         str::FromStr,
@@ -30,8 +28,10 @@ use {
             atomic::{AtomicBool, AtomicU64, Ordering},
             Arc, RwLock,
         },
+        thread::sleep,
         thread::{Builder, JoinHandle},
-    }
+        time::Duration,
+    },
 };
 
 #[derive(Default)]
@@ -50,9 +50,21 @@ impl MangoBencherStats {
             ("num_confirmed_txs", self.num_confirmed_txs, i64),
             ("num_error_txs", self.num_error_txs, i64),
             ("num_timeout_txs", self.num_timeout_txs, i64),
-            ("percent_confirmed_txs", (self.num_confirmed_txs * 100)/self.recv_limit, i64),
-            ("percent_error_txs", (self.num_error_txs * 100)/self.recv_limit, i64),
-            ("percent_timeout_txs", (self.num_timeout_txs * 100)/self.recv_limit, i64),
+            (
+                "percent_confirmed_txs",
+                (self.num_confirmed_txs * 100) / self.recv_limit,
+                i64
+            ),
+            (
+                "percent_error_txs",
+                (self.num_error_txs * 100) / self.recv_limit,
+                i64
+            ),
+            (
+                "percent_timeout_txs",
+                (self.num_timeout_txs * 100) / self.recv_limit,
+                i64
+            ),
         );
     }
 }
@@ -199,7 +211,7 @@ async fn main() {
         current_slot.clone(),
         tpu_client.clone(),
         mango_group_config,
-        id
+        id,
     );
 
     let mm_threads: Vec<JoinHandle<()>> = start_market_making_threads(
@@ -216,8 +228,6 @@ async fn main() {
         *priority_fees_proba,
         number_of_markers_per_mm,
     );
-
-
 
     let duration = duration.clone();
     let quotes_per_second = quotes_per_second.clone();

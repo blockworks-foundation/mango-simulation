@@ -1,7 +1,10 @@
 use crate::metrics::{MetricType, MetricU64, Metrics};
 
 use {
-    solana_sdk::{pubkey::Pubkey, account::{Account, AccountSharedData, ReadableAccount}},
+    solana_sdk::{
+        account::{Account, AccountSharedData, ReadableAccount},
+        pubkey::Pubkey,
+    },
     std::collections::HashMap,
 };
 
