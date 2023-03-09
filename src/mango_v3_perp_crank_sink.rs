@@ -8,6 +8,7 @@ use std::{
 use arrayref::array_ref;
 use crossbeam_channel::Sender;
 use async_trait::async_trait;
+use log::*;
 use mango::{
   instruction::consume_events,
   queue::{AnyEvent, EventQueueHeader, EventType, FillEvent, OutEvent, Queue},
@@ -25,7 +26,7 @@ const MAX_BACKLOG: usize = 2;
 const MAX_EVENTS_PER_TX: usize = 10;
 
 pub struct MangoV3PerpCrankSink {
-  pks: BTreeMap<Pubkey, Pubkey>,
+  mkt_pks_by_evq_pks: BTreeMap<Pubkey, Pubkey>,
   group_pk: Pubkey,
   cache_pk: Pubkey,
   mango_v3_program: Pubkey,
@@ -41,7 +42,7 @@ impl MangoV3PerpCrankSink {
       instruction_sender: Sender<Vec<Instruction>>,
   ) -> Self {
       Self {
-          pks: pks.iter().map(|e| e.clone()).collect(),
+          mkt_pks_by_evq_pks: pks.iter().map(|(mkt_pk, evq_pk)| (evq_pk.clone(), mkt_pk.clone()) ).collect(),
           group_pk,
           cache_pk,
           mango_v3_program,
@@ -64,6 +65,7 @@ impl AccountWriteSink for MangoV3PerpCrankSink {
           const HEADER_SIZE: usize = size_of::<EventQueueHeader>();
           let header_data = array_ref![account.data(), 0, HEADER_SIZE];
           let header = RefCell::<EventQueueHeader>::new(*bytemuck::from_bytes(header_data));
+          let seq_num = header.clone().into_inner().seq_num.clone();
           // trace!("evq {} seq_num {}", mkt.name, header.seq_num);
 
           const QUEUE_SIZE: usize = EVENT_SIZE * QUEUE_LEN;
@@ -79,10 +81,16 @@ impl AccountWriteSink for MangoV3PerpCrankSink {
               .iter()
               .find(|e| e.event_type == EventType::Fill as u8)
               .is_some();
-          let has_backlog = event_queue.iter().count() > MAX_BACKLOG;
+          let len = event_queue.iter().count();
+          let has_backlog = len > MAX_BACKLOG;
+          debug!("evq {pk:?} seq_num={seq_num} len={len} contains_fill_events={contains_fill_events} has_backlog={has_backlog}");
+
           if !contains_fill_events && !has_backlog {
               return Err("throttled".into());
           }
+
+          trace!("evq {pk:?} seq_num={seq_num} len={len} contains_fill_events={contains_fill_events} has_backlog={has_backlog}");
+
 
           let mut mango_accounts: Vec<_> = event_queue
               .iter()
@@ -103,7 +111,7 @@ impl AccountWriteSink for MangoV3PerpCrankSink {
               .collect();
 
           let mkt_pk = self
-              .pks
+              .mkt_pks_by_evq_pks
               .get(pk)
               .expect(&format!("{pk:?} is a known public key"));
 

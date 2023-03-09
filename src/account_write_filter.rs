@@ -4,6 +4,7 @@ use crate::{
 };
 
 use async_trait::async_trait;
+use log::*;
 use solana_sdk::{account::WritableAccount, pubkey::Pubkey, stake_history::Epoch};
 use std::{
     collections::{BTreeSet, HashMap},
@@ -59,9 +60,13 @@ pub fn init(
         loop {
             tokio::select! {
                 Ok(account_write) = account_write_queue_receiver.recv() => {
-                    if all_queue_pks.contains(&account_write.pubkey) {
+                    if !all_queue_pks.contains(&account_write.pubkey) {
+                        trace!("account write skipped {:?}", account_write.pubkey);
+
                         continue;
                     }
+
+                    trace!("account write processed {:?}", account_write.pubkey);
 
                     chain_data.update_account(
                         account_write.pubkey,
@@ -79,6 +84,8 @@ pub fn init(
                     );
                 }
                 Ok(slot_update) = slot_queue_receiver.recv() => {
+                    trace!("slot {:?}", slot_update);
+
                   chain_data.update_slot(SlotData {
                         slot: slot_update.slot,
                         parent: slot_update.parent,
@@ -88,6 +95,8 @@ pub fn init(
 
                 }
             }
+
+            trace!("propagate chain data downstream");
 
             for route in routes.iter() {
                 for pk in route.matched_pubkeys.iter() {
@@ -100,9 +109,12 @@ pub fn init(
                                 let is_throttled =
                                     record.timestamp.elapsed() < route.timeout_interval;
                                 if is_unchanged || is_throttled {
+                                    trace!("skipped is_unchanged={is_unchanged} is_throttled={is_throttled} {pk_b58}");
                                     continue;
                                 }
                             };
+
+                            trace!("process {pk_b58}");
 
                             match route.sink.process(pk, account_info).await {
                                 Ok(()) => {

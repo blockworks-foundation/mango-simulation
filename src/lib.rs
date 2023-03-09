@@ -1,5 +1,4 @@
 pub mod account_write_filter;
-pub mod blockhash_poller;
 pub mod cli;
 pub mod chain_data;
 pub mod confirmation_strategies;
@@ -13,7 +12,7 @@ pub mod market_markers;
 pub mod metrics;
 pub mod rotating_queue;
 pub mod states;
-pub mod transaction_sender;
+pub mod websocket_source;
 
 trait AnyhowWrap {
   type Value;

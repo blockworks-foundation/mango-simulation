@@ -3,8 +3,8 @@ use std::{
     io::Read,
     str::FromStr,
     sync::{Arc, RwLock, atomic::{AtomicBool, AtomicU64, Ordering}},
-    thread::{Builder, JoinHandle},
-    time::Duration, task::Context,
+    thread::{Builder},
+    time::Duration,
 };
 
 // use solana_client::rpc_client::RpcClient;
@@ -13,13 +13,11 @@ use crate::{
     grpc_plugin_source::{self, FilterConfig, SourceConfig},
     mango::GroupConfig,
     mango_v3_perp_crank_sink::MangoV3PerpCrankSink,
-    metrics, blockhash_poller, transaction_sender, states::TransactionSendRecord, rotating_queue::RotatingQueue,
+    metrics, states::TransactionSendRecord, rotating_queue::RotatingQueue, websocket_source,
 };
-use futures::{task::noop_waker};
 use crossbeam_channel::{Sender, unbounded};
-use log::info;
-use chrono::{DateTime, Utc};
-use solana_client::{nonblocking::rpc_client::RpcClient, tpu_client::TpuClient};
+use log::*;
+use solana_client::{tpu_client::TpuClient};
 use solana_quic_client::{QuicPool, QuicConnectionManager, QuicConfig};
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey, signature::Keypair, hash::Hash, transaction::Transaction, signer::Signer};
 
@@ -78,8 +76,7 @@ pub fn start(
                 //     market: c.perp_market_pk,
                 // });
                 let ok = tpu_client.send_transaction(&tx);
-                info!("crank-tx-sender tx={:?} ok={ok}", tx.signatures[0]);
-                
+                trace!("send tx={:?} ok={ok}", tx.signatures[0]);    
             }
         }
     }).unwrap();
@@ -123,21 +120,21 @@ pub fn start(
 
             info!("start processing grpc events");
 
-            grpc_plugin_source::process_events(
+            // grpc_plugin_source::process_events(
+            //     &config,
+            //     &filter_config,
+            //     account_write_queue_sender,
+            //     slot_queue_sender,
+            //     metrics_tx.clone(),
+            // ).await;
+
+
+              websocket_source::process_events(
                 &config,
                 &filter_config,
                 account_write_queue_sender,
                 slot_queue_sender,
-                metrics_tx.clone(),
             ).await;
-
-
-            // TODO also implement websocket handler
-            //   websocket_source::process_events(
-            //     &config.source,
-            //     account_write_queue_sender,
-            //     slot_queue_sender,
-            // ).await;
         });
 
 }
