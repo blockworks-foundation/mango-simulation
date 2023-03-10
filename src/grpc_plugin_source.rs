@@ -36,19 +36,12 @@ pub mod solana {
 pub use geyser::*;
 pub use solana::storage::confirmed_block::*;
 
+use crate::websocket_source::KeeperConfig;
 use crate::{
     chain_data::{AccountWrite, SlotStatus, SlotUpdate},
     metrics::{MetricType, Metrics},
     AnyhowWrap,
 };
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct SourceConfig {
-    pub dedup_queue_size: usize,
-    pub grpc_sources: Vec<GrpcSourceConfig>,
-    pub snapshot: SnapshotSourceConfig,
-    pub rpc_ws_url: String,
-}
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct GrpcSourceConfig {
@@ -76,6 +69,12 @@ pub struct FilterConfig {
 pub struct SnapshotSourceConfig {
     pub rpc_http_url: String,
     pub program_id: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct GrpcConfig {
+    pub dedup_queue_size: usize,
+    pub grpc_sources: Vec<GrpcSourceConfig>,
 }
 
 //use solana_geyser_connector_plugin_grpc::compression::zstd_decompress;
@@ -144,7 +143,7 @@ async fn get_snapshot_gma(
 
 async fn feed_data_geyser(
     grpc_config: &GrpcSourceConfig,
-    snapshot_config: &SnapshotSourceConfig,
+    keeper_config: &KeeperConfig,
     filter_config: &FilterConfig,
     sender: async_channel::Sender<Message>,
 ) -> anyhow::Result<()> {
@@ -153,10 +152,9 @@ async fn feed_data_geyser(
             .expect("reading connection string from env"),
         _ => grpc_config.connection_string.clone(),
     };
-    let rpc_http_url = match &snapshot_config.rpc_http_url.chars().next().unwrap() {
-        '$' => env::var(&snapshot_config.rpc_http_url[1..])
-            .expect("reading connection string from env"),
-        _ => snapshot_config.rpc_http_url.clone(),
+    let rpc_http_url = match &keeper_config.rpc_url.chars().next().unwrap() {
+        '$' => env::var(&keeper_config.rpc_url[1..]).expect("reading connection string from env"),
+        _ => keeper_config.rpc_url.clone(),
     };
     info!("connecting to {}", connection_string);
 
@@ -317,7 +315,7 @@ async fn feed_data_geyser(
                             },
                         };
 
-                        let pubkey_bytes = Pubkey::new(&write.pubkey).to_bytes();
+                        let pubkey_bytes: [u8;32] = write.pubkey.try_into().expect("Pubkey be of size 32 bytes");
                         let write_version_mapping = pubkey_writes.entry(pubkey_bytes).or_insert(WriteVersion {
                             global: write.write_version,
                             slot: 1, // write version 0 is reserved for snapshots
@@ -401,7 +399,7 @@ async fn feed_data_geyser(
     }
 }
 
-fn make_tls_config(config: &TlsConfig) -> ClientTlsConfig {
+fn _make_tls_config(config: &TlsConfig) -> ClientTlsConfig {
     let server_root_ca_cert = match &config.ca_cert_path.chars().next().unwrap() {
         '$' => env::var(&config.ca_cert_path[1..])
             .expect("reading server root ca cert from env")
@@ -433,17 +431,19 @@ fn make_tls_config(config: &TlsConfig) -> ClientTlsConfig {
 }
 
 pub async fn process_events(
-    config: &SourceConfig,
+    grpc_config: GrpcConfig,
+    keeper_config: KeeperConfig,
     filter_config: &FilterConfig,
     account_write_queue_sender: async_channel::Sender<AccountWrite>,
     slot_queue_sender: async_channel::Sender<SlotUpdate>,
     metrics_sender: Metrics,
 ) {
     // Subscribe to geyser
-    let (msg_sender, msg_receiver) = async_channel::bounded::<Message>(config.dedup_queue_size);
-    for grpc_source in config.grpc_sources.clone() {
+    let (msg_sender, msg_receiver) =
+        async_channel::bounded::<Message>(grpc_config.dedup_queue_size);
+    for grpc_source in grpc_config.grpc_sources.clone() {
         let msg_sender = msg_sender.clone();
-        let snapshot_source = config.snapshot.clone();
+        let snapshot_source = keeper_config.clone();
         let metrics_sender = metrics_sender.clone();
         let filter_config = filter_config.clone();
 
@@ -532,7 +532,11 @@ pub async fn process_events(
 
                         // Skip writes that a different server has already sent
                         let pubkey_writes = latest_write.entry(info.slot).or_default();
-                        let pubkey_bytes = Pubkey::new(&update.pubkey).to_bytes();
+                        let pubkey_bytes: [u8; 32] = update
+                            .pubkey
+                            .clone()
+                            .try_into()
+                            .expect("Pubkey should be of size 32 bytes");
                         let writes = pubkey_writes.entry(pubkey_bytes).or_insert(0);
                         if update.write_version <= *writes {
                             continue;
@@ -543,11 +547,18 @@ pub async fn process_events(
                         // zstd_decompress(&update.data, &mut uncompressed).unwrap();
                         account_write_queue_sender
                             .send(AccountWrite {
-                                pubkey: Pubkey::new(&update.pubkey),
+                                pubkey: Pubkey::new_from_array(
+                                    update
+                                        .pubkey
+                                        .try_into()
+                                        .expect("Pubkey be of size 32 bytes"),
+                                ),
                                 slot: info.slot,
                                 write_version: update.write_version,
                                 lamports: update.lamports,
-                                owner: Pubkey::new(&update.owner),
+                                owner: Pubkey::new_from_array(
+                                    update.owner.try_into().expect("Pubkey be of size 32 bytes"),
+                                ),
                                 executable: update.executable,
                                 rent_epoch: update.rent_epoch,
                                 data: update.data,

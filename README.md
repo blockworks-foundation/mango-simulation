@@ -4,6 +4,8 @@ This project is use to stress a solana cluster like devnet, testnet or local sol
 
 The code then will create transaction request (q) requests per seconds for (n) seconds per perp market perp user. Each transaction request will contains remove following instruction CancelAllPerpOrders and two PlacePerpOrder (one for bid and another for ask).
 
+For the best results to avoid limits by quic it is better to fill the argument "identity" of a valid staked validator for the cluster you are testing with.
+
 ## Build
 
 Clone repo

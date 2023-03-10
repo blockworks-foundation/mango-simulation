@@ -1,6 +1,4 @@
 use std::{
-    fs::File,
-    io::Read,
     str::FromStr,
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
@@ -13,13 +11,12 @@ use std::{
 // use solana_client::rpc_client::RpcClient;
 use crate::{
     account_write_filter::{self, AccountWriteRoute},
-    grpc_plugin_source::{self, FilterConfig, SourceConfig},
+    grpc_plugin_source::FilterConfig,
     mango::GroupConfig,
     mango_v3_perp_crank_sink::MangoV3PerpCrankSink,
     metrics,
-    rotating_queue::RotatingQueue,
     states::TransactionSendRecord,
-    websocket_source,
+    websocket_source::{self, KeeperConfig},
 };
 use crossbeam_channel::{unbounded, Sender};
 use log::*;
@@ -31,10 +28,11 @@ use solana_sdk::{
 };
 
 pub fn start(
-    tx_record_sx: Sender<TransactionSendRecord>,
+    config: KeeperConfig,
+    _tx_record_sx: Sender<TransactionSendRecord>,
     exit_signal: Arc<AtomicBool>,
     blockhash: Arc<RwLock<Hash>>,
-    current_slot: Arc<AtomicU64>,
+    _current_slot: Arc<AtomicU64>,
     tpu_client: Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>,
     group: &GroupConfig,
     identity: &Keypair,
@@ -100,14 +98,6 @@ pub fn start(
         .unwrap();
 
     tokio::spawn(async move {
-        let config: SourceConfig = {
-            let mut file = File::open("source.toml").expect("source.toml file in cwd");
-            let mut contents = String::new();
-            file.read_to_string(&mut contents)
-                .expect("source.toml to contain data");
-            toml::from_str(&contents).unwrap()
-        };
-
         let metrics_tx = metrics::start(
             metrics::MetricsConfig {
                 output_stdout: true,
@@ -145,7 +135,7 @@ pub fn start(
         // ).await;
 
         websocket_source::process_events(
-            &config,
+            config,
             &filter_config,
             account_write_queue_sender,
             slot_queue_sender,

@@ -19,7 +19,7 @@ use std::{
 
 use crate::{
     chain_data::{AccountWrite, SlotStatus, SlotUpdate},
-    grpc_plugin_source::{FilterConfig, SourceConfig},
+    grpc_plugin_source::FilterConfig,
     AnyhowWrap,
 };
 
@@ -29,23 +29,29 @@ enum WebsocketMessage {
     SlotUpdate(Arc<solana_client::rpc_response::SlotUpdate>),
 }
 
+#[derive(Debug, Clone)]
+pub struct KeeperConfig {
+    pub program_id: Pubkey,
+    pub rpc_url: String,
+    pub websocket_url: String,
+}
+
 // TODO: the reconnecting should be part of this
 async fn feed_data(
-    config: &SourceConfig,
-    filter_config: &FilterConfig,
+    config: KeeperConfig,
+    _filter_config: &FilterConfig,
     sender: async_channel::Sender<WebsocketMessage>,
 ) -> anyhow::Result<()> {
-    let program_id = Pubkey::from_str(&config.snapshot.program_id)?;
+    let program_id = config.program_id;
     let snapshot_duration = Duration::from_secs(10);
 
     info!("feed_data {config:?}");
-    let connect = ws::try_connect::<RpcSolPubSubClient>(&config.rpc_ws_url).map_err_anyhow()?;
+    let connect = ws::try_connect::<RpcSolPubSubClient>(&config.websocket_url).map_err_anyhow()?;
     let client: RpcSolPubSubClient = connect.await.map_err_anyhow()?;
 
-    let rpc_client =
-        http::connect_with_options::<AccountsScanClient>(&config.snapshot.rpc_http_url, true)
-            .await
-            .map_err_anyhow()?;
+    let rpc_client = http::connect_with_options::<AccountsScanClient>(&config.rpc_url, true)
+        .await
+        .map_err_anyhow()?;
 
     let account_info_config = RpcAccountInfoConfig {
         encoding: Some(UiAccountEncoding::Base64),
@@ -126,7 +132,7 @@ async fn feed_data(
 
 // TODO: rename / split / rework
 pub async fn process_events(
-    config: &SourceConfig,
+    config: KeeperConfig,
     filter_config: &FilterConfig,
     account_write_queue_sender: async_channel::Sender<AccountWrite>,
     slot_queue_sender: async_channel::Sender<SlotUpdate>,
@@ -135,12 +141,11 @@ pub async fn process_events(
 
     // Subscribe to program account updates websocket
     let (update_sender, update_receiver) = async_channel::unbounded::<WebsocketMessage>();
-    let config = config.clone();
     let filter_config = filter_config.clone();
     tokio::spawn(async move {
         // if the websocket disconnects, we get no data in a while etc, reconnect and try again
         loop {
-            let out = feed_data(&config, &filter_config, update_sender.clone());
+            let out = feed_data(config.clone(), &filter_config, update_sender.clone());
             let res = out.await;
             info!("loop {res:?}");
         }

@@ -7,12 +7,13 @@ use {
         crank,
         helpers::{
             get_latest_blockhash, get_mango_market_perps_cache, start_blockhash_polling_service,
-            write_block_data_into_csv, write_transaction_data_into_csv,
+            to_sdk_pk, write_block_data_into_csv, write_transaction_data_into_csv,
         },
         keeper::start_keepers,
         mango::{AccountKeys, MangoConfig},
         market_markers::start_market_making_threads,
         states::{BlockData, PerpMarketCache, TransactionConfirmRecord, TransactionSendRecord},
+        websocket_source::KeeperConfig,
     },
     solana_client::{
         connection_cache::ConnectionCache, rpc_client::RpcClient, tpu_client::TpuClient,
@@ -171,9 +172,9 @@ async fn main() {
         current_slot.clone(),
         rpc_client.clone(),
     );
-
+    let mango_program_pk = Pubkey::from_str(mango_group_config.mango_program_id.as_str()).unwrap();
     let perp_market_caches: Vec<PerpMarketCache> =
-        get_mango_market_perps_cache(rpc_client.clone(), mango_group_config);
+        get_mango_market_perps_cache(rpc_client.clone(), mango_group_config, &mango_program_pk);
 
     let quote_root_bank =
         Pubkey::from_str(mango_group_config.tokens.last().unwrap().root_key.as_str()).unwrap();
@@ -203,8 +204,14 @@ async fn main() {
 
     let (tx_record_sx, tx_record_rx) = crossbeam_channel::unbounded();
     let from_slot = current_slot.load(Ordering::Relaxed);
+    let keeper_config = KeeperConfig {
+        program_id: to_sdk_pk(&mango_program_pk),
+        rpc_url: json_rpc_url.clone(),
+        websocket_url: websocket_url.clone(),
+    };
 
     crank::start(
+        keeper_config,
         tx_record_sx.clone(),
         exit_signal.clone(),
         blockhash.clone(),
