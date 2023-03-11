@@ -1,7 +1,7 @@
 [package]
 authors = ["Godmode Galactus <gmgalactus@mango.markets>", "Maximilian Schneider <max@mango.markets>"]
 edition = "2021"
-name = "solana-bench-mango"
+name = "simulate-mango-v3"
 version = "1.10.26"
 repository = "https://github.com/solana-labs/solana"
 license = "Apache-2.0"
@@ -27,8 +27,8 @@ serde_json = "1.0.79"
 serde_yaml = "0.8.23"
 iter_tools = "0.1.4"
 
-mango = { git = "https://github.com/blockworks-foundation/mango-v3.git", branch = "mango_bencher_compatible", default-features = false }
-mango-common = { git = "https://github.com/blockworks-foundation/mango-v3.git", branch = "mango_bencher_compatible" }
+mango = { git = "https://github.com/blockworks-foundation/mango-v3.git", tag = "v3.6.0", default-features = false }
+mango-common = { git = "https://github.com/blockworks-foundation/mango-v3.git", tag = "v3.6.0" }
 
 solana-client = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
 solana-core = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
@@ -77,11 +77,6 @@ vergen = "=7.2.1"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
-
-exclude = [
-    "deps/solana",
-    "deps/mango-v3",
-]
 
 [patch.crates-io]
 # for gzip encoded responses

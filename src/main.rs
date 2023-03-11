@@ -1,7 +1,7 @@
 use {
     log::{error, info},
     serde_json,
-    solana_bench_mango::{
+    simulate_mango_v3::{
         cli,
         confirmation_strategies::confirmations_by_blocks,
         crank,

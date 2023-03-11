@@ -3146,8 +3146,8 @@ dependencies = [
 
 [[package]]
 name = "mango"
-version = "3.6.2"
-source = "git+https://github.com/blockworks-foundation/mango-v3.git?branch=mango_bencher_compatible#d7bdb18f6e13851f749c5c3ac5adaecf7093fa0d"
+version = "3.6.0"
+source = "git+https://github.com/blockworks-foundation/mango-v3.git?tag=v3.6.0#771cabea1cb848439d282e43bf5f0e20ef7c9703"
 dependencies = [
  "anchor-lang",
  "arrayref",
@@ -3176,7 +3176,7 @@ dependencies = [
 [[package]]
 name = "mango-common"
 version = "3.0.0"
-source = "git+https://github.com/blockworks-foundation/mango-v3.git?branch=mango_bencher_compatible#d7bdb18f6e13851f749c5c3ac5adaecf7093fa0d"
+source = "git+https://github.com/blockworks-foundation/mango-v3.git?tag=v3.6.0#771cabea1cb848439d282e43bf5f0e20ef7c9703"
 dependencies = [
  "bytemuck",
  "solana-program 1.15.2",
@@ -3185,7 +3185,7 @@ dependencies = [
 [[package]]
 name = "mango-logs"
 version = "0.1.0"
-source = "git+https://github.com/blockworks-foundation/mango-v3.git?branch=mango_bencher_compatible#d7bdb18f6e13851f749c5c3ac5adaecf7093fa0d"
+source = "git+https://github.com/blockworks-foundation/mango-v3.git?tag=v3.6.0#771cabea1cb848439d282e43bf5f0e20ef7c9703"
 dependencies = [
  "anchor-lang",
  "base64 0.13.1",
@@ -3194,7 +3194,7 @@ dependencies = [
 [[package]]
 name = "mango-macro"
 version = "3.0.0"
-source = "git+https://github.com/blockworks-foundation/mango-v3.git?branch=mango_bencher_compatible#d7bdb18f6e13851f749c5c3ac5adaecf7093fa0d"
+source = "git+https://github.com/blockworks-foundation/mango-v3.git?tag=v3.6.0#771cabea1cb848439d282e43bf5f0e20ef7c9703"
 dependencies = [
  "bytemuck",
  "mango-common",
@@ -5385,6 +5385,64 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2a30f10c911c0355f80f1c2faa8096efc4a58cdf8590b954d5b395efa071c711"
 
 [[package]]
+name = "simulate-mango-v3"
+version = "1.10.26"
+dependencies = [
+ "anyhow",
+ "arrayref",
+ "async-channel",
+ "async-trait",
+ "borsh 0.9.3",
+ "bytemuck",
+ "cargo-lock",
+ "chrono",
+ "clap 2.34.0",
+ "crossbeam-channel",
+ "csv",
+ "fixed",
+ "fixed-macro",
+ "futures 0.3.26",
+ "git-version",
+ "iter_tools",
+ "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-core-client",
+ "log 0.4.17",
+ "mango",
+ "mango-common",
+ "multiqueue",
+ "prost 0.11.6",
+ "protobuf-src",
+ "rand 0.8.5",
+ "rayon",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "serde_yaml 0.8.26",
+ "solana-account-decoder",
+ "solana-clap-utils",
+ "solana-cli-config",
+ "solana-client",
+ "solana-core",
+ "solana-logger 1.15.3",
+ "solana-metrics",
+ "solana-net-utils",
+ "solana-program 1.15.2",
+ "solana-quic-client",
+ "solana-rpc",
+ "solana-runtime",
+ "solana-sdk 1.15.3",
+ "solana-transaction-status",
+ "solana-version",
+ "thiserror",
+ "tokio",
+ "toml",
+ "tonic 0.8.3",
+ "tonic-build 0.8.4",
+ "vergen",
+ "warp",
+]
+
+[[package]]
 name = "sized-chunks"
 version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5506,64 +5564,6 @@ dependencies = [
  "solana-program-runtime",
  "solana-sdk 1.15.3",
  "thiserror",
-]
-
-[[package]]
-name = "solana-bench-mango"
-version = "1.10.26"
-dependencies = [
- "anyhow",
- "arrayref",
- "async-channel",
- "async-trait",
- "borsh 0.9.3",
- "bytemuck",
- "cargo-lock",
- "chrono",
- "clap 2.34.0",
- "crossbeam-channel",
- "csv",
- "fixed",
- "fixed-macro",
- "futures 0.3.26",
- "git-version",
- "iter_tools",
- "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-core-client",
- "log 0.4.17",
- "mango",
- "mango-common",
- "multiqueue",
- "prost 0.11.6",
- "protobuf-src",
- "rand 0.8.5",
- "rayon",
- "serde",
- "serde_derive",
- "serde_json",
- "serde_yaml 0.8.26",
- "solana-account-decoder",
- "solana-clap-utils",
- "solana-cli-config",
- "solana-client",
- "solana-core",
- "solana-logger 1.15.3",
- "solana-metrics",
- "solana-net-utils",
- "solana-program 1.15.2",
- "solana-quic-client",
- "solana-rpc",
- "solana-runtime",
- "solana-sdk 1.15.3",
- "solana-transaction-status",
- "solana-version",
- "thiserror",
- "tokio",
- "toml",
- "tonic 0.8.3",
- "tonic-build 0.8.4",
- "vergen",
- "warp",
 ]
 
 [[package]]
