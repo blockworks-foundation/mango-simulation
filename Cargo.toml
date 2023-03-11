@@ -27,7 +27,7 @@ serde_json = "1.0.79"
 serde_yaml = "0.8.23"
 iter_tools = "0.1.4"
 
-mango = { git = "https://github.com/blockworks-foundation/mango-v3.git", branch = "mango_bencher_compatible", default-features = false, features = ["no-entrypoint"] }
+mango = { git = "https://github.com/blockworks-foundation/mango-v3.git", branch = "mango_bencher_compatible", default-features = false }
 mango-common = { git = "https://github.com/blockworks-foundation/mango-v3.git", branch = "mango_bencher_compatible" }
 
 solana-client = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
@@ -43,10 +43,37 @@ solana-version = { git = "https://github.com/solana-labs/solana.git", branch="v1
 solana-logger = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
 solana-transaction-status = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
 solana-quic-client = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-account-decoder = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+
+# pin program to mango-v3 version of solana sdk
+# now we can use sdk for recent version and program for legacy
+# we have a bunch of helpers to convert between the two explicitly
+solana-program = "1.9.17"
 
 thiserror = "1.0"
-solana-program = ">=1.9.0"
 csv = "1.0.0"
+tonic = { version = "0.8.2", features = ["gzip", "tls", "tls-roots"] }
+tokio = { version = "1", features = ["full"] }
+anyhow = "1.0"
+async-channel = "1.6"
+async-trait = "0.1"
+prost = "0.11"
+warp = "0.3"
+futures = "0.3.17"
+jsonrpc-core = "18.0.0"
+jsonrpc-core-client = { version = "18.0.0",  features = ["ws", "http"] }
+arrayref = "*"
+bytemuck = "1.7.2"
+toml = "*"
+
+
+[build-dependencies]
+anyhow = "1.0.62"
+cargo-lock = "8.0.2"
+git-version = "0.3.5"
+protobuf-src = "1.1.0"
+tonic-build = "0.8.2"
+vergen = "=7.2.1"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
@@ -55,3 +82,7 @@ exclude = [
     "deps/solana",
     "deps/mango-v3",
 ]
+
+[patch.crates-io]
+# for gzip encoded responses
+jsonrpc-core-client = { git = "https://github.com/ckamm/jsonrpc.git", branch = "ckamm/http-with-gzip" }

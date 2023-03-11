@@ -4,24 +4,24 @@ use {
     solana_bench_mango::{
         cli,
         confirmation_strategies::confirmations_by_blocks,
+        crank,
         helpers::{
             get_latest_blockhash, get_mango_market_perps_cache, start_blockhash_polling_service,
-            write_block_data_into_csv, write_transaction_data_into_csv,
+            to_sdk_pk, write_block_data_into_csv, write_transaction_data_into_csv,
         },
         keeper::start_keepers,
         mango::{AccountKeys, MangoConfig},
         market_markers::start_market_making_threads,
         states::{BlockData, PerpMarketCache, TransactionConfirmRecord, TransactionSendRecord},
+        websocket_source::KeeperConfig,
     },
-    solana_metrics::{datapoint_info},
     solana_client::{
         connection_cache::ConnectionCache, rpc_client::RpcClient, tpu_client::TpuClient,
     },
+    solana_metrics::datapoint_info,
     solana_program::pubkey::Pubkey,
     solana_sdk::commitment_config::CommitmentConfig,
     std::{
-        thread::sleep,
-        time::Duration,
         fs,
         net::{IpAddr, Ipv4Addr},
         str::FromStr,
@@ -29,7 +29,9 @@ use {
             atomic::{AtomicBool, AtomicU64, Ordering},
             Arc, RwLock,
         },
+        thread::sleep,
         thread::{Builder, JoinHandle},
+        time::Duration,
     },
 };
 
@@ -49,14 +51,27 @@ impl MangoBencherStats {
             ("num_confirmed_txs", self.num_confirmed_txs, i64),
             ("num_error_txs", self.num_error_txs, i64),
             ("num_timeout_txs", self.num_timeout_txs, i64),
-            ("percent_confirmed_txs", (self.num_confirmed_txs * 100)/self.recv_limit, i64),
-            ("percent_error_txs", (self.num_error_txs * 100)/self.recv_limit, i64),
-            ("percent_timeout_txs", (self.num_timeout_txs * 100)/self.recv_limit, i64),
+            (
+                "percent_confirmed_txs",
+                (self.num_confirmed_txs * 100) / self.recv_limit,
+                i64
+            ),
+            (
+                "percent_error_txs",
+                (self.num_error_txs * 100) / self.recv_limit,
+                i64
+            ),
+            (
+                "percent_timeout_txs",
+                (self.num_timeout_txs * 100) / self.recv_limit,
+                i64
+            ),
         );
     }
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     solana_logger::setup_with_default("solana=info");
     solana_metrics::set_panic_hook("bench-mango", /*version:*/ None);
 
@@ -157,9 +172,9 @@ fn main() {
         current_slot.clone(),
         rpc_client.clone(),
     );
-
+    let mango_program_pk = Pubkey::from_str(mango_group_config.mango_program_id.as_str()).unwrap();
     let perp_market_caches: Vec<PerpMarketCache> =
-        get_mango_market_perps_cache(rpc_client.clone(), &mango_group_config);
+        get_mango_market_perps_cache(rpc_client.clone(), mango_group_config, &mango_program_pk);
 
     let quote_root_bank =
         Pubkey::from_str(mango_group_config.tokens.last().unwrap().root_key.as_str()).unwrap();
@@ -189,11 +204,27 @@ fn main() {
 
     let (tx_record_sx, tx_record_rx) = crossbeam_channel::unbounded();
     let from_slot = current_slot.load(Ordering::Relaxed);
+    let keeper_config = KeeperConfig {
+        program_id: to_sdk_pk(&mango_program_pk),
+        rpc_url: json_rpc_url.clone(),
+        websocket_url: websocket_url.clone(),
+    };
+
+    crank::start(
+        keeper_config,
+        tx_record_sx.clone(),
+        exit_signal.clone(),
+        blockhash.clone(),
+        current_slot.clone(),
+        tpu_client.clone(),
+        mango_group_config,
+        id,
+    );
 
     let mm_threads: Vec<JoinHandle<()>> = start_market_making_threads(
         account_keys_parsed.clone(),
         perp_market_caches.clone(),
-        tx_record_sx,
+        tx_record_sx.clone(),
         exit_signal.clone(),
         blockhash.clone(),
         current_slot.clone(),
@@ -204,6 +235,7 @@ fn main() {
         *priority_fees_proba,
         number_of_markers_per_mm,
     );
+
     let duration = duration.clone();
     let quotes_per_second = quotes_per_second.clone();
     let account_keys_parsed = account_keys_parsed.clone();

@@ -292,6 +292,10 @@ pub fn start_market_making_threads(
     prioritization_fee_proba: u8,
     number_of_markers_per_mm: u8,
 ) -> Vec<JoinHandle<()>> {
+    let warmup_duration = Duration::from_secs(10);
+    info!("waiting for keepers to warmup for {warmup_duration:?}");
+    sleep(warmup_duration);
+
     let mut rng = rand::thread_rng();
     account_keys_parsed
         .iter()
@@ -308,11 +312,10 @@ pub fn start_market_making_threads(
             let tpu_client = tpu_client.clone();
 
             info!(
-                "wallet:{:?} https://testnet.mango.markets/account?pubkey={:?}",
+                "wallet: {:?} mango account: {:?}",
                 mango_account_signer.pubkey(),
                 mango_account_pk
             );
-            //sleep(Duration::from_secs(10));
             let tx_record_sx = tx_record_sx.clone();
             let perp_market_caches = perp_market_caches
                 .choose_multiple(&mut rng, number_of_markers_per_mm as usize)

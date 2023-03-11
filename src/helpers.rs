@@ -207,11 +207,11 @@ pub fn start_blockhash_polling_service(
 pub fn get_mango_market_perps_cache(
     rpc_client: Arc<RpcClient>,
     mango_group_config: &GroupConfig,
+    mango_program_pk: &Pubkey,
 ) -> Vec<PerpMarketCache> {
     // fetch group
     let mango_group_pk = Pubkey::from_str(mango_group_config.public_key.as_str()).unwrap();
     let mango_group = load_from_rpc::<MangoGroup>(&rpc_client, &mango_group_pk);
-    let mango_program_pk = Pubkey::from_str(mango_group_config.mango_program_id.as_str()).unwrap();
     let mango_cache_pk = Pubkey::from_str(mango_group.mango_cache.to_string().as_str()).unwrap();
     let mango_cache = load_from_rpc::<MangoCache>(&rpc_client, &mango_cache_pk);
 
@@ -259,7 +259,7 @@ pub fn get_mango_market_perps_cache(
                 order_base_lots,
                 price,
                 price_quote_lots,
-                mango_program_pk,
+                mango_program_pk: mango_program_pk.clone(),
                 mango_group_pk,
                 mango_cache_pk,
                 perp_market_pk,
