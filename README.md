@@ -1,4 +1,4 @@
-# Simulate Mango - test solana cluster by simulating mango markets
+# Mango Simulation - test solana cluster by simulating mango markets
 
 This project is use to stress a solana cluster like devnet, testnet or local solana cluster by simulating mango markets. This code requires ids.json which describe mango group for a cluster and accounts.json file which has preconfigured user accounts in mango.
 
