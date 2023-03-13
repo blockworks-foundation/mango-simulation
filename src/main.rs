@@ -1,7 +1,7 @@
 use {
     log::{error, info},
     serde_json,
-    simulate_mango_v3::{
+    mango_simulation::{
         cli,
         confirmation_strategies::confirmations_by_blocks,
         crank,

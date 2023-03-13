@@ -13,7 +13,7 @@ For the best results to avoid limits by quic it is better to fill the argument "
 
 Clone repo
 ```sh
-https://github.com/blockworks-foundation/simulate_mango_v3.git
+https://github.com/blockworks-foundation/mango-simulation.git
 ```
 
 Build
@@ -24,13 +24,13 @@ cargo build
 ## Run
 
 ```sh
-cargo run --bin solana-bench-mango -- -u http://localhost:8899 --identity validator-identity.json --keeper-authority authority.json --accounts accounts.json  --mango ids.json --mango-cluster localnet --duration 10 -q 2 --transaction_save_file tlog.csv --block_data_save_file blog.csv
+cargo run --bin mango-simulation -- -u http://localhost:8899 --identity validator-identity.json --keeper-authority authority.json --accounts accounts.json  --mango ids.json --mango-cluster localnet --duration 10 -q 2 --transaction_save_file tlog.csv --block_data_save_file blog.csv
 ```
 
 Details for each argument:
 ```
 USAGE:
-    simulate-mango-v3 [OPTIONS] --accounts <FILENAME> --mango <FILENAME>
+    mango-simulation [OPTIONS] --accounts <FILENAME> --mango <FILENAME>
 
 FLAGS:
     -h, --help       Prints help information

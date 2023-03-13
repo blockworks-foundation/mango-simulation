@@ -1,11 +1,11 @@
 [package]
 authors = ["Godmode Galactus <gmgalactus@mango.markets>", "Maximilian Schneider <max@mango.markets>"]
 edition = "2021"
-name = "simulate-mango-v3"
+name = "mango-simulation"
 version = "1.10.26"
-repository = "https://github.com/solana-labs/solana"
+repository = "https://github.com/blockworks-foundation/mango-simulation"
 license = "Apache-2.0"
-homepage = "https://solana.com/"
+homepage = "mango.markets"
 publish = false
 
 rust-version = "1.66.1"
