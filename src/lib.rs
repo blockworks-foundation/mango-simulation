@@ -10,8 +10,11 @@ pub mod mango;
 pub mod mango_v3_perp_crank_sink;
 pub mod market_markers;
 pub mod metrics;
+pub mod result_writer;
 pub mod rotating_queue;
 pub mod states;
+pub mod stats;
+pub mod tpu_manager;
 pub mod websocket_source;
 
 trait AnyhowWrap {
