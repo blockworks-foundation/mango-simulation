@@ -1,8 +1,8 @@
 use std::{cell::RefCell, collections::BTreeMap, convert::TryFrom, mem::size_of};
 
 use arrayref::array_ref;
+use async_channel::Sender;
 use async_trait::async_trait;
-use crossbeam_channel::Sender;
 use log::*;
 use mango::{
     instruction::consume_events,
@@ -135,7 +135,7 @@ impl AccountWriteSink for MangoV3PerpCrankSink {
         //     event_queue.iter().count()
         // );
 
-        if let Err(e) = self.instruction_sender.send(vec![ix?]) {
+        if let Err(e) = self.instruction_sender.send(vec![ix?]).await {
             return Err(e.to_string());
         }
 

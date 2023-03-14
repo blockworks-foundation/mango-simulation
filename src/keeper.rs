@@ -8,13 +8,11 @@ use {
         hash::Hash, instruction::Instruction, message::Message, signature::Keypair, signer::Signer,
         transaction::Transaction,
     },
-    std::{
-        sync::{
-            atomic::{AtomicBool, Ordering},
-            Arc, RwLock,
-        },
-        thread::{Builder, JoinHandle},
+    std::sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
     },
+    tokio::{sync::RwLock, task::JoinHandle},
 };
 
 fn create_root_bank_update_instructions(perp_markets: &[PerpMarketCache]) -> Vec<Instruction> {
@@ -99,14 +97,14 @@ fn create_cache_perp_markets_instructions(perp_markets: &[PerpMarketCache]) -> I
     to_sdk_instruction(ix)
 }
 
-pub fn send_transaction(
+pub async fn send_transaction(
     tpu_client: Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>,
     ixs: &[Instruction],
     blockhash: Arc<RwLock<Hash>>,
     payer: &Keypair,
 ) {
     let mut tx = Transaction::new_unsigned(Message::new(ixs, Some(&payer.pubkey())));
-    let recent_blockhash = blockhash.read().unwrap();
+    let recent_blockhash = blockhash.read().await;
     tx.sign(&[payer], *recent_blockhash);
     tpu_client.send_transaction(&tx);
 }
@@ -148,67 +146,66 @@ pub fn start_keepers(
     quote_node_banks: Vec<Pubkey>,
 ) -> JoinHandle<()> {
     let authority = Keypair::from_bytes(&authority.to_bytes()).unwrap();
-    Builder::new()
-        .name("updating root bank keeper".to_string())
-        .spawn(move || {
-            let root_update_ixs = create_root_bank_update_instructions(&perp_markets);
-            let cache_prices = create_update_price_cache_instructions(&perp_markets);
-            let update_perp_cache = create_cache_perp_markets_instructions(&perp_markets);
-            let cache_root_bank_ix = create_cache_root_bank_instruction(&perp_markets);
-            let update_funding_ix = create_update_fundings_instructions(&perp_markets);
-            let quote_root_bank_ix = create_update_and_cache_quote_banks(
-                &perp_markets,
-                quote_root_bank,
-                quote_node_banks,
-            );
+    tokio::spawn(async move {
+        let root_update_ixs = create_root_bank_update_instructions(&perp_markets);
+        let cache_prices = create_update_price_cache_instructions(&perp_markets);
+        let update_perp_cache = create_cache_perp_markets_instructions(&perp_markets);
+        let cache_root_bank_ix = create_cache_root_bank_instruction(&perp_markets);
+        let update_funding_ix = create_update_fundings_instructions(&perp_markets);
+        let quote_root_bank_ix =
+            create_update_and_cache_quote_banks(&perp_markets, quote_root_bank, quote_node_banks);
 
-            let blockhash = blockhash.clone();
+        let blockhash = blockhash.clone();
 
-            // add prioritization instruction
-            //let prioritization_ix = ComputeBudgetInstruction::set_compute_unit_price(10000);
-            //root_update_ixs.insert(0, prioritization_ix.clone());
+        // add prioritization instruction
+        //let prioritization_ix = ComputeBudgetInstruction::set_compute_unit_price(10000);
+        //root_update_ixs.insert(0, prioritization_ix.clone());
 
-            while !exit_signal.load(Ordering::Relaxed) {
-                send_transaction(
-                    tpu_client.clone(),
-                    &[cache_prices.clone()],
-                    blockhash.clone(),
-                    &authority,
-                );
+        while !exit_signal.load(Ordering::Relaxed) {
+            send_transaction(
+                tpu_client.clone(),
+                &[cache_prices.clone()],
+                blockhash.clone(),
+                &authority,
+            )
+            .await;
 
-                send_transaction(
-                    tpu_client.clone(),
-                    quote_root_bank_ix.as_slice(),
-                    blockhash.clone(),
-                    &authority,
-                );
+            send_transaction(
+                tpu_client.clone(),
+                quote_root_bank_ix.as_slice(),
+                blockhash.clone(),
+                &authority,
+            )
+            .await;
 
-                for updates in update_funding_ix.chunks(3) {
-                    send_transaction(tpu_client.clone(), updates, blockhash.clone(), &authority);
-                }
-
-                send_transaction(
-                    tpu_client.clone(),
-                    root_update_ixs.as_slice(),
-                    blockhash.clone(),
-                    &authority,
-                );
-
-                send_transaction(
-                    tpu_client.clone(),
-                    &[update_perp_cache.clone()],
-                    blockhash.clone(),
-                    &authority,
-                );
-
-                send_transaction(
-                    tpu_client.clone(),
-                    &[cache_root_bank_ix.clone()],
-                    blockhash.clone(),
-                    &authority,
-                );
-                std::thread::sleep(std::time::Duration::from_secs(1));
+            for updates in update_funding_ix.chunks(3) {
+                send_transaction(tpu_client.clone(), updates, blockhash.clone(), &authority).await;
             }
-        })
-        .unwrap()
+
+            send_transaction(
+                tpu_client.clone(),
+                root_update_ixs.as_slice(),
+                blockhash.clone(),
+                &authority,
+            )
+            .await;
+
+            send_transaction(
+                tpu_client.clone(),
+                &[update_perp_cache.clone()],
+                blockhash.clone(),
+                &authority,
+            )
+            .await;
+
+            send_transaction(
+                tpu_client.clone(),
+                &[cache_root_bank_ix.clone()],
+                blockhash.clone(),
+                &authority,
+            )
+            .await;
+            std::thread::sleep(std::time::Duration::from_secs(1));
+        }
+    })
 }
