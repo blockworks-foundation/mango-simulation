@@ -15,19 +15,18 @@ use mango::{
     matching::Side,
 };
 use rand::{distributions::Uniform, prelude::Distribution, seq::SliceRandom};
-use solana_client::tpu_client::TpuClient;
 use solana_program::pubkey::Pubkey;
-use solana_quic_client::{QuicConfig, QuicConnectionManager, QuicPool};
 use solana_sdk::{
     compute_budget, hash::Hash, instruction::Instruction, message::Message, signature::Keypair,
     signer::Signer, transaction::Transaction,
 };
-use tokio::{sync::mpsc::UnboundedSender, sync::RwLock, task::JoinHandle};
+use tokio::{sync::RwLock, task::JoinHandle};
 
 use crate::{
     helpers::{to_sdk_instruction, to_sp_pk},
     mango::AccountKeys,
     states::{PerpMarketCache, TransactionSendRecord},
+    tpu_manager::TpuManager,
 };
 
 pub fn create_ask_bid_transaction(
@@ -154,8 +153,7 @@ fn generate_random_fees(
 pub async fn send_mm_transactions(
     quotes_per_second: u64,
     perp_market_caches: &Vec<PerpMarketCache>,
-    tx_record_sx: &UnboundedSender<TransactionSendRecord>,
-    tpu_client: Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>,
+    tpu_manager: TpuManager,
     mango_account_pk: Pubkey,
     mango_account_signer: &Keypair,
     blockhash: Arc<RwLock<Hash>>,
@@ -183,20 +181,17 @@ pub async fn send_mm_transactions(
             let recent_blockhash = *blockhash.read().await;
             tx.sign(&[mango_account_signer], recent_blockhash);
 
-            tpu_client.send_transaction(&tx);
-            let sent = tx_record_sx.send(TransactionSendRecord {
+            let tx_send_record = TransactionSendRecord {
                 signature: tx.signatures[0],
                 sent_at: Utc::now(),
                 sent_slot: slot.load(Ordering::Acquire),
-                market_maker: mango_account_signer_pk,
-                market: c.perp_market_pk,
+                market_maker: Some(mango_account_signer_pk),
+                market: Some(c.perp_market_pk),
                 priority_fees: prioritization_fee,
-            });
-            if sent.is_err() {
-                println!(
-                    "sending error on channel : {}",
-                    sent.err().unwrap().to_string()
-                );
+                keeper_instruction: None,
+            };
+            if !tpu_manager.send_transaction(&tx, tx_send_record).await {
+                println!("sending failed on tpu client");
             }
         }
     }
@@ -205,11 +200,10 @@ pub async fn send_mm_transactions(
 pub fn start_market_making_threads(
     account_keys_parsed: Vec<AccountKeys>,
     perp_market_caches: Vec<PerpMarketCache>,
-    tx_record_sx: UnboundedSender<TransactionSendRecord>,
     exit_signal: Arc<AtomicBool>,
     blockhash: Arc<RwLock<Hash>>,
     current_slot: Arc<AtomicU64>,
-    tpu_client: Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>,
+    tpu_manager: TpuManager,
     duration: &Duration,
     quotes_per_second: u64,
     prioritization_fee_proba: u8,
@@ -228,14 +222,13 @@ pub fn start_market_making_threads(
                 Pubkey::from_str(account_keys.mango_account_pks[0].as_str()).unwrap();
             let mango_account_signer =
                 Keypair::from_bytes(account_keys.secret_key.as_slice()).unwrap();
-            let tpu_client = tpu_client.clone();
+            let tpu_manager = tpu_manager.clone();
 
             info!(
                 "wallet: {:?} mango account: {:?}",
                 mango_account_signer.pubkey(),
                 mango_account_pk
             );
-            let tx_record_sx = tx_record_sx.clone();
             let perp_market_caches = perp_market_caches
                 .choose_multiple(&mut rng, number_of_markers_per_mm as usize)
                 .map(|x| x.clone())
@@ -253,8 +246,7 @@ pub fn start_market_making_threads(
                     send_mm_transactions(
                         quotes_per_second,
                         &perp_market_caches,
-                        &tx_record_sx,
-                        tpu_client.clone(),
+                        tpu_manager.clone(),
                         mango_account_pk,
                         &mango_account_signer,
                         blockhash.clone(),
@@ -273,7 +265,6 @@ pub fn start_market_making_threads(
                         );
                     }
                 }
-                println!("stopping mm thread");
             })
         })
         .collect()

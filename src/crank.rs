@@ -1,16 +1,17 @@
 use crate::{
     account_write_filter::{self, AccountWriteRoute},
     grpc_plugin_source::FilterConfig,
+    helpers::to_sp_pk,
     mango::GroupConfig,
     mango_v3_perp_crank_sink::MangoV3PerpCrankSink,
     metrics,
-    states::TransactionSendRecord,
+    states::{KeeperInstruction, TransactionSendRecord},
+    tpu_manager::TpuManager,
     websocket_source::{self, KeeperConfig},
 };
 use async_channel::unbounded;
+use chrono::Utc;
 use log::*;
-use solana_client::tpu_client::TpuClient;
-use solana_quic_client::{QuicConfig, QuicConnectionManager, QuicPool};
 use solana_sdk::{
     hash::Hash, instruction::Instruction, pubkey::Pubkey, signature::Keypair, signer::Signer,
     transaction::Transaction,
@@ -23,15 +24,17 @@ use std::{
     },
     time::Duration,
 };
-use tokio::sync::{mpsc::UnboundedSender, RwLock};
+use tokio::sync::RwLock;
 
 pub fn start(
     config: KeeperConfig,
     exit_signal: Arc<AtomicBool>,
     blockhash: Arc<RwLock<Hash>>,
-    tpu_client: Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>,
+    current_slot: Arc<AtomicU64>,
+    tpu_manager: TpuManager,
     group: &GroupConfig,
     identity: &Keypair,
+    prioritization_fee: u64,
 ) {
     let perp_queue_pks: Vec<_> = group
         .perp_markets
@@ -55,7 +58,7 @@ pub fn start(
             .collect(),
     };
 
-    let (instruction_sender, instruction_receiver) = unbounded::<Vec<Instruction>>();
+    let (instruction_sender, instruction_receiver) = unbounded::<(Pubkey, Vec<Instruction>)>();
     let identity = Keypair::from_bytes(identity.to_bytes().as_slice()).unwrap();
     tokio::spawn(async move {
         info!(
@@ -67,7 +70,7 @@ pub fn start(
                 break;
             }
 
-            if let Ok(ixs) = instruction_receiver.recv().await {
+            if let Ok((market, ixs)) = instruction_receiver.recv().await {
                 // TODO add priority fee
 
                 let tx = Transaction::new_signed_with_payer(
@@ -76,15 +79,18 @@ pub fn start(
                     &[&identity],
                     *blockhash.read().await,
                 );
-                // TODO: find perp market pk and resolve import issue between solana program versions
-                // tx_record_sx.send(TransactionSendRecord {
-                //     signature:  tx.signatures[0],
-                //     sent_at: Utc::now(),
-                //     sent_slot: current_slot.load(Ordering::Acquire),
-                //     market_maker: identity.pubkey(),
-                //     market: c.perp_market_pk,
-                // });
-                let ok = tpu_client.send_transaction(&tx);
+
+                let tx_send_record = TransactionSendRecord {
+                    signature: tx.signatures[0],
+                    sent_at: Utc::now(),
+                    sent_slot: current_slot.load(Ordering::Acquire),
+                    market_maker: None,
+                    market: Some(to_sp_pk(&market)),
+                    priority_fees: prioritization_fee,
+                    keeper_instruction: Some(KeeperInstruction::ConsumeEvents),
+                };
+
+                let ok = tpu_manager.send_transaction(&tx, tx_send_record).await;
                 trace!("send tx={:?} ok={ok}", tx.signatures[0]);
             }
         }

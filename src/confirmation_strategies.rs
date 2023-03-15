@@ -1,5 +1,4 @@
 use std::{
-    str::FromStr,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
@@ -9,13 +8,15 @@ use std::{
 
 use chrono::Utc;
 use dashmap::DashMap;
-use log::debug;
+use log::{debug, warn};
 use solana_client::{nonblocking::rpc_client::RpcClient, rpc_config::RpcBlockConfig};
 use solana_sdk::{
     commitment_config::{CommitmentConfig, CommitmentLevel},
     signature::Signature,
 };
-use solana_transaction_status::{RewardType, UiConfirmedBlock};
+use solana_transaction_status::{
+    RewardType, TransactionDetails, UiConfirmedBlock, UiTransactionEncoding,
+};
 
 use crate::states::{BlockData, TransactionConfirmRecord, TransactionSendRecord};
 
@@ -23,14 +24,14 @@ use async_channel::Sender;
 use tokio::{sync::mpsc::UnboundedReceiver, task::JoinHandle, time::Instant};
 
 pub async fn process_blocks(
-    block: UiConfirmedBlock,
+    block: &UiConfirmedBlock,
     tx_confirm_records: Sender<TransactionConfirmRecord>,
     tx_block_data: Sender<BlockData>,
     transaction_map: Arc<DashMap<Signature, (TransactionSendRecord, Instant)>>,
     slot: u64,
 ) {
     let mut mm_transaction_count: u64 = 0;
-    let rewards = &block.rewards.unwrap();
+    let rewards = block.rewards.as_ref().unwrap();
     let slot_leader = match rewards
         .iter()
         .find(|r| r.reward_type == Some(RewardType::Fee))
@@ -39,38 +40,42 @@ pub async fn process_blocks(
         None => "".to_string(),
     };
 
-    if let Some(transactions) = block.transactions {
+    if let Some(transactions) = &block.transactions {
         let nb_transactions = transactions.len();
         let mut cu_consumed: u64 = 0;
         for solana_transaction_status::EncodedTransactionWithStatusMeta {
             transaction, meta, ..
         } in transactions
         {
-            if let solana_transaction_status::EncodedTransaction::Json(transaction) = transaction {
-                for signature in transaction.signatures {
-                    let signature = Signature::from_str(&signature).unwrap();
-
-                    let transaction_record_op = {
-                        let rec = transaction_map.get(&signature);
-                        match rec {
-                            Some(x) => Some(x.clone()),
-                            None => None,
-                        }
-                    };
-                    // add CU in counter
-                    if let Some(meta) = &meta {
-                        match meta.compute_units_consumed {
-                            solana_transaction_status::option_serializer::OptionSerializer::Some(x) => {
-                                cu_consumed = cu_consumed.saturating_add(x);
-                            },
-                            _ => {},
-                        }
+            let transaction = match transaction.decode() {
+                Some(tx) => tx,
+                None => {
+                    continue;
+                }
+            };
+            for signature in &transaction.signatures {
+                let transaction_record_op = {
+                    let rec = transaction_map.get(&signature);
+                    match rec {
+                        Some(x) => Some(x.clone()),
+                        None => None,
                     }
-                    if let Some(transaction_record) = transaction_record_op {
-                        let transaction_record = transaction_record.0;
-                        mm_transaction_count += 1;
+                };
+                // add CU in counter
+                if let Some(meta) = &meta {
+                    match meta.compute_units_consumed {
+                        solana_transaction_status::option_serializer::OptionSerializer::Some(x) => {
+                            cu_consumed = cu_consumed.saturating_add(x);
+                        }
+                        _ => {}
+                    }
+                }
+                if let Some(transaction_record) = transaction_record_op {
+                    let transaction_record = transaction_record.0;
+                    mm_transaction_count += 1;
 
-                        let _ = tx_confirm_records.send(TransactionConfirmRecord {
+                    match tx_confirm_records
+                        .send(TransactionConfirmRecord {
                             signature: transaction_record.signature.to_string(),
                             confirmed_slot: Some(slot),
                             confirmed_at: Some(Utc::now().to_string()),
@@ -87,23 +92,30 @@ pub async fn process_blocks(
                                 None
                             },
                             block_hash: Some(block.blockhash.clone()),
-                            market: transaction_record.market.to_string(),
-                            market_maker: transaction_record.market_maker.to_string(),
+                            market: transaction_record.market.map(|x| x.to_string()),
+                            market_maker: transaction_record.market_maker.map(|x| x.to_string()),
+                            keeper_instruction: transaction_record.keeper_instruction,
                             slot_processed: Some(slot),
                             slot_leader: Some(slot_leader.clone()),
                             timed_out: false,
                             priority_fees: transaction_record.priority_fees,
-                        });
+                        })
+                        .await
+                    {
+                        Ok(_) => {}
+                        Err(e) => {
+                            warn!("Tx confirm record channel broken {}", e.to_string());
+                        }
                     }
-
-                    transaction_map.remove(&signature);
                 }
+
+                transaction_map.remove(&signature);
             }
         }
         // push block data
         {
             let _ = tx_block_data.send(BlockData {
-                block_hash: block.blockhash,
+                block_hash: block.blockhash.clone(),
                 block_leader: slot_leader,
                 block_slot: slot,
                 block_time: if let Some(time) = block.block_time {
@@ -125,27 +137,38 @@ pub fn confirmations_by_blocks(
     tx_confirm_records: Sender<TransactionConfirmRecord>,
     tx_block_data: Sender<BlockData>,
     from_slot: u64,
+    exit_signal: Arc<AtomicBool>,
 ) -> Vec<JoinHandle<()>> {
     let transaction_map = Arc::new(DashMap::new());
-    let do_exit = Arc::new(AtomicBool::new(false));
 
     let map_filler_jh = {
         let transaction_map = transaction_map.clone();
-        let do_exit = do_exit.clone();
+        let exit_signal = exit_signal.clone();
         tokio::spawn(async move {
             loop {
-                match tx_record_rx.recv().await {
-                    Some(tx_record) => {
-                        debug!(
-                            "add to queue len={} sig={}",
-                            transaction_map.len() + 1,
-                            tx_record.signature
-                        );
-                        transaction_map.insert(tx_record.signature, (tx_record, Instant::now()));
-                    }
-                    None => {
-                        do_exit.store(true, Ordering::Relaxed);
-                        break;
+                match tokio::time::timeout(tokio::time::Duration::from_secs(1), tx_record_rx.recv())
+                    .await
+                {
+                    Ok(tx_record) => match tx_record {
+                        Some(tx_record) => {
+                            debug!(
+                                "add to queue len={} sig={}",
+                                transaction_map.len() + 1,
+                                tx_record.signature
+                            );
+                            transaction_map
+                                .insert(tx_record.signature, (tx_record, Instant::now()));
+                        }
+                        None => {
+                            exit_signal.store(true, Ordering::Relaxed);
+                            break;
+                        }
+                    },
+                    Err(_) => {
+                        // on timeout just check if services are being stopped
+                        if exit_signal.load(Ordering::Relaxed) {
+                            break;
+                        }
                     }
                 }
             }
@@ -154,40 +177,51 @@ pub fn confirmations_by_blocks(
 
     let cleaner_jh = {
         let transaction_map = transaction_map.clone();
-        let do_exit = do_exit.clone();
+        let exit_signal = exit_signal.clone();
         let tx_confirm_records = tx_confirm_records.clone();
         tokio::spawn(async move {
             loop {
                 tokio::time::sleep(Duration::from_secs(60)).await;
                 {
-                    transaction_map.retain(|signature, (sent_record, instant)| {
-                        let retain = instant.elapsed() > Duration::from_secs(120);
+                    let mut to_remove = vec![];
+
+                    for tx_data in transaction_map.iter() {
+                        let sent_record = &tx_data.0;
+                        let instant = tx_data.1;
+                        let signature = tx_data.key();
+                        let remove = instant.elapsed() > Duration::from_secs(120);
 
                         // add to timeout if not retaining
-                        if !retain {
-                            let _ = tx_confirm_records.send(TransactionConfirmRecord {
-                                signature: signature.to_string(),
-                                confirmed_slot: None,
-                                confirmed_at: None,
-                                sent_at: sent_record.sent_at.to_string(),
-                                sent_slot: sent_record.sent_slot,
-                                successful: false,
-                                error: Some("timeout".to_string()),
-                                block_hash: None,
-                                market: sent_record.market.to_string(),
-                                market_maker: sent_record.market_maker.to_string(),
-                                slot_processed: None,
-                                slot_leader: None,
-                                timed_out: true,
-                                priority_fees: sent_record.priority_fees,
-                            });
+                        if remove {
+                            let _ = tx_confirm_records
+                                .send(TransactionConfirmRecord {
+                                    signature: signature.to_string(),
+                                    confirmed_slot: None,
+                                    confirmed_at: None,
+                                    sent_at: sent_record.sent_at.to_string(),
+                                    sent_slot: sent_record.sent_slot,
+                                    successful: false,
+                                    error: Some("timeout".to_string()),
+                                    block_hash: None,
+                                    market: sent_record.market.map(|x| x.to_string()),
+                                    market_maker: sent_record.market_maker.map(|x| x.to_string()),
+                                    keeper_instruction: sent_record.keeper_instruction.clone(),
+                                    slot_processed: None,
+                                    slot_leader: None,
+                                    timed_out: true,
+                                    priority_fees: sent_record.priority_fees,
+                                })
+                                .await;
+                            to_remove.push(signature.clone());
                         }
+                    }
 
-                        retain
-                    });
+                    for signature in to_remove {
+                        transaction_map.remove(&signature);
+                    }
 
                     // if exit and all the transactions are processed
-                    if do_exit.load(Ordering::Relaxed) && transaction_map.len() == 0 {
+                    if exit_signal.load(Ordering::Relaxed) && transaction_map.len() == 0 {
                         break;
                     }
                 }
@@ -196,7 +230,7 @@ pub fn confirmations_by_blocks(
     };
 
     let block_confirmation_jh = {
-        let do_exit = do_exit.clone();
+        let exit_signal = exit_signal.clone();
         tokio::spawn(async move {
             let mut start_block = from_slot;
             let mut start_instant = tokio::time::Instant::now();
@@ -205,7 +239,7 @@ pub fn confirmations_by_blocks(
                 commitment: CommitmentLevel::Confirmed,
             };
             loop {
-                if do_exit.load(Ordering::Relaxed) && transaction_map.len() == 0 {
+                if exit_signal.load(Ordering::Relaxed) && transaction_map.len() == 0 {
                     break;
                 }
 
@@ -228,11 +262,11 @@ pub fn confirmations_by_blocks(
                     client.get_block_with_config(
                         *slot,
                         RpcBlockConfig {
-                            encoding: None,
-                            transaction_details: None,
-                            rewards: None,
+                            encoding: Some(UiTransactionEncoding::Base64),
+                            transaction_details: Some(TransactionDetails::Full),
+                            rewards: Some(true),
                             commitment: Some(commitment_confirmation),
-                            max_supported_transaction_version: None,
+                            max_supported_transaction_version: Some(0),
                         },
                     )
                 });
@@ -246,7 +280,7 @@ pub fn confirmations_by_blocks(
                     let tx_block_data = tx_block_data.clone();
                     let transaction_map = transaction_map.clone();
                     process_blocks(
-                        block.clone(),
+                        block,
                         tx_confirm_records,
                         tx_block_data,
                         transaction_map,

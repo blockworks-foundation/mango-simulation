@@ -1,4 +1,4 @@
-use log::info;
+use log::{info, warn};
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_client::{connection_cache::ConnectionCache, nonblocking::tpu_client::TpuClient};
 use solana_quic_client::{QuicConfig, QuicConnectionManager, QuicPool};
@@ -10,12 +10,12 @@ use std::{
         Arc,
     },
 };
-use tokio::sync::RwLock;
+use tokio::sync::{mpsc::UnboundedSender, RwLock};
+
+use crate::{states::TransactionSendRecord, stats::MangoSimulationStats};
 
 pub type QuicTpuClient = TpuClient<QuicPool, QuicConnectionManager, QuicConfig>;
 pub type QuicConnectionCache = ConnectionCache;
-
-const TPU_CONNECTION_CACHE_SIZE: usize = 8;
 
 #[derive(Clone)]
 pub struct TpuManager {
@@ -26,6 +26,8 @@ pub struct TpuManager {
     pub ws_addr: String,
     fanout_slots: u64,
     identity: Arc<Keypair>,
+    stats: MangoSimulationStats,
+    tx_send_record: UnboundedSender<TransactionSendRecord>,
 }
 
 impl TpuManager {
@@ -34,7 +36,9 @@ impl TpuManager {
         ws_addr: String,
         fanout_slots: u64,
         identity: Keypair,
-    ) -> anyhow::Result<Self> {
+        stats: MangoSimulationStats,
+        tx_send_record: UnboundedSender<TransactionSendRecord>,
+    ) -> Self {
         let connection_cache = ConnectionCache::new_with_client_options(
             4,
             None,
@@ -59,14 +63,16 @@ impl TpuManager {
             .unwrap(),
         );
 
-        Ok(Self {
+        Self {
             rpc_client,
             tpu_client: Arc::new(RwLock::new(tpu_client)),
             ws_addr,
             fanout_slots,
             error_count: Default::default(),
             identity: Arc::new(identity),
-        })
+            stats,
+            tx_send_record,
+        }
     }
 
     pub async fn reset_tpu_client(&self) -> anyhow::Result<()> {
@@ -116,20 +122,24 @@ impl TpuManager {
         self.tpu_client.read().await.clone()
     }
 
-    pub async fn try_send_wire_transaction_batch(
+    pub async fn send_transaction(
         &self,
-        wire_transactions: Vec<Vec<u8>>,
-    ) -> anyhow::Result<()> {
+        transaction: &solana_sdk::transaction::Transaction,
+        transaction_sent_record: TransactionSendRecord,
+    ) -> bool {
         let tpu_client = self.get_tpu_client().await;
-        match tpu_client
-            .try_send_wire_transaction_batch(wire_transactions)
-            .await
-        {
-            Ok(_) => Ok(()),
-            Err(err) => {
-                self.reset().await?;
-                Err(err.into())
-            }
+        self.stats
+            .inc_send(&transaction_sent_record.keeper_instruction);
+
+        let tx_sent_record = self.tx_send_record.clone();
+        let sent = tx_sent_record.send(transaction_sent_record);
+        if sent.is_err() {
+            warn!(
+                "sending error on channel : {}",
+                sent.err().unwrap().to_string()
+            );
         }
+
+        tpu_client.send_transaction(transaction).await
     }
 }
