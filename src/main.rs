@@ -203,19 +203,19 @@ pub async fn main() -> anyhow::Result<()> {
     let mut tasks = vec![];
     tasks.push(blockhash_thread);
 
-    let (tx_status_sx, tx_status_rx) = async_channel::unbounded();
-    let (block_status_sx, block_status_rx) = async_channel::unbounded();
+    let (tx_status_sx, tx_status_rx) = tokio::sync::broadcast::channel(1024);
+    let (block_status_sx, block_status_rx) = tokio::sync::broadcast::channel(1024);
 
     let mut writers_jh = initialize_result_writers(
         transaction_save_file,
         block_data_save_file,
-        tx_status_rx.clone(),
-        block_status_rx.clone(),
+        tx_status_rx,
+        block_status_rx,
     );
     tasks.append(&mut writers_jh);
 
     let stats_handle =
-        mango_sim_stats.update_from_tx_status_stream(tx_status_rx.clone(), exit_signal.clone());
+        mango_sim_stats.update_from_tx_status_stream(tx_status_sx.subscribe(), exit_signal.clone());
     tasks.push(stats_handle);
 
     let mut confirmation_threads = confirmations_by_blocks(

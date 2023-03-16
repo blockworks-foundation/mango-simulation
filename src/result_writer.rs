@@ -1,6 +1,5 @@
-use async_channel::Receiver;
-use tokio::task::JoinHandle;
-
+use tokio::{task::JoinHandle, sync::broadcast::Receiver};
+use async_std::fs::File;
 use crate::states::{BlockData, TransactionConfirmRecord};
 
 pub fn initialize_result_writers(
@@ -13,30 +12,36 @@ pub fn initialize_result_writers(
 
     if !transaction_save_file.is_empty() {
         let tx_data_jh = tokio::spawn(async move {
-            let mut writer = csv::Writer::from_path(transaction_save_file).unwrap();
+            let mut writer = csv_async::AsyncSerializer::from_writer(
+                File::create(transaction_save_file).await.unwrap()
+            );
+            let mut tx_data = tx_data;
             loop {
                 if let Ok(record) = tx_data.recv().await {
-                    writer.serialize(record).unwrap();
+                    writer.serialize(record).await.unwrap();
                 } else {
                     break;
                 }
             }
-            writer.flush().unwrap();
+            writer.flush().await.unwrap();
         });
         tasks.push(tx_data_jh);
     }
 
     if !block_data_save_file.is_empty() {
         let block_data_jh = tokio::spawn(async move {
-            let mut writer = csv::Writer::from_path(block_data_save_file).unwrap();
+            let mut writer = csv_async::AsyncSerializer::from_writer(
+                File::create(block_data_save_file).await.unwrap()
+            );
+            let mut block_data = block_data;
             loop {
                 if let Ok(record) = block_data.recv().await {
-                    writer.serialize(record).unwrap();
+                    writer.serialize(record).await.unwrap();
                 } else {
                     break;
                 }
             }
-            writer.flush().unwrap();
+            writer.flush().await.unwrap();
         });
         tasks.push(block_data_jh);
     }

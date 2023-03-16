@@ -20,8 +20,7 @@ use solana_transaction_status::{
 
 use crate::states::{BlockData, TransactionConfirmRecord, TransactionSendRecord};
 
-use async_channel::Sender;
-use tokio::{sync::mpsc::UnboundedReceiver, task::JoinHandle, time::Instant};
+use tokio::{sync::mpsc::UnboundedReceiver, task::JoinHandle, time::Instant, sync::broadcast::Sender};
 
 pub async fn process_blocks(
     block: &UiConfirmedBlock,
@@ -100,7 +99,6 @@ pub async fn process_blocks(
                             timed_out: false,
                             priority_fees: transaction_record.priority_fees,
                         })
-                        .await
                     {
                         Ok(_) => {}
                         Err(e) => {
@@ -134,8 +132,8 @@ pub async fn process_blocks(
 pub fn confirmations_by_blocks(
     client: Arc<RpcClient>,
     mut tx_record_rx: UnboundedReceiver<TransactionSendRecord>,
-    tx_confirm_records: Sender<TransactionConfirmRecord>,
-    tx_block_data: Sender<BlockData>,
+    tx_confirm_records: tokio::sync::broadcast::Sender<TransactionConfirmRecord>,
+    tx_block_data: tokio::sync::broadcast::Sender<BlockData>,
     from_slot: u64,
     exit_signal: Arc<AtomicBool>,
 ) -> Vec<JoinHandle<()>> {
@@ -210,8 +208,7 @@ pub fn confirmations_by_blocks(
                                     slot_leader: None,
                                     timed_out: true,
                                     priority_fees: sent_record.priority_fees,
-                                })
-                                .await;
+                                });
                             to_remove.push(signature.clone());
                         }
                     }

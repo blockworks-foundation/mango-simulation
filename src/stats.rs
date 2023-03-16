@@ -62,11 +62,12 @@ impl MangoSimulationStats {
 
     pub fn update_from_tx_status_stream(
         &self,
-        tx_confirm_record_reciever: async_channel::Receiver<TransactionConfirmRecord>,
+        tx_confirm_record_reciever: tokio::sync::broadcast::Receiver<TransactionConfirmRecord>,
         do_exit: Arc<AtomicBool>,
     ) -> JoinHandle<()> {
         let counters = self.counters.clone();
         tokio::spawn(async move {
+            let mut tx_confirm_record_reciever = tx_confirm_record_reciever;
             loop {
                 if do_exit.load(Ordering::Relaxed) {
                     break;
