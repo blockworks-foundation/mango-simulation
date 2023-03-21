@@ -1,20 +1,21 @@
 use {
-    crate::{helpers::to_sdk_instruction, states::PerpMarketCache},
+    crate::{
+        helpers::to_sdk_instruction,
+        states::{KeeperInstruction, PerpMarketCache, TransactionSendRecord},
+        tpu_manager::TpuManager,
+    },
+    chrono::Utc,
     iter_tools::Itertools,
-    solana_client::tpu_client::TpuClient,
     solana_program::pubkey::Pubkey,
-    solana_quic_client::{QuicConfig, QuicConnectionManager, QuicPool},
     solana_sdk::{
         hash::Hash, instruction::Instruction, message::Message, signature::Keypair, signer::Signer,
         transaction::Transaction,
     },
-    std::{
-        sync::{
-            atomic::{AtomicBool, Ordering},
-            Arc, RwLock,
-        },
-        thread::{Builder, JoinHandle},
+    std::sync::{
+        atomic::{AtomicBool, AtomicU64, Ordering},
+        Arc,
     },
+    tokio::{sync::RwLock, task::JoinHandle},
 };
 
 fn create_root_bank_update_instructions(perp_markets: &[PerpMarketCache]) -> Vec<Instruction> {
@@ -99,16 +100,29 @@ fn create_cache_perp_markets_instructions(perp_markets: &[PerpMarketCache]) -> I
     to_sdk_instruction(ix)
 }
 
-pub fn send_transaction(
-    tpu_client: Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>,
+pub async fn send_transaction(
+    tpu_manager: TpuManager,
     ixs: &[Instruction],
     blockhash: Arc<RwLock<Hash>>,
+    current_slot: Arc<AtomicU64>,
     payer: &Keypair,
+    prioritization_fee: u64,
+    keeper_instruction: KeeperInstruction,
 ) {
     let mut tx = Transaction::new_unsigned(Message::new(ixs, Some(&payer.pubkey())));
-    let recent_blockhash = blockhash.read().unwrap();
+    let recent_blockhash = blockhash.read().await;
     tx.sign(&[payer], *recent_blockhash);
-    tpu_client.send_transaction(&tx);
+
+    let tx_send_record = TransactionSendRecord {
+        signature: tx.signatures[0],
+        sent_at: Utc::now(),
+        sent_slot: current_slot.load(Ordering::Acquire),
+        market_maker: None,
+        market: None,
+        priority_fees: prioritization_fee,
+        keeper_instruction: Some(keeper_instruction),
+    };
+    tpu_manager.send_transaction(&tx, tx_send_record).await;
 }
 
 pub fn create_update_and_cache_quote_banks(
@@ -140,75 +154,116 @@ pub fn create_update_and_cache_quote_banks(
 
 pub fn start_keepers(
     exit_signal: Arc<AtomicBool>,
-    tpu_client: Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>,
+    tpu_manager: TpuManager,
     perp_markets: Vec<PerpMarketCache>,
     blockhash: Arc<RwLock<Hash>>,
+    current_slot: Arc<AtomicU64>,
     authority: &Keypair,
     quote_root_bank: Pubkey,
     quote_node_banks: Vec<Pubkey>,
+    prioritization_fee: u64,
 ) -> JoinHandle<()> {
     let authority = Keypair::from_bytes(&authority.to_bytes()).unwrap();
-    Builder::new()
-        .name("updating root bank keeper".to_string())
-        .spawn(move || {
-            let root_update_ixs = create_root_bank_update_instructions(&perp_markets);
-            let cache_prices = create_update_price_cache_instructions(&perp_markets);
-            let update_perp_cache = create_cache_perp_markets_instructions(&perp_markets);
-            let cache_root_bank_ix = create_cache_root_bank_instruction(&perp_markets);
-            let update_funding_ix = create_update_fundings_instructions(&perp_markets);
-            let quote_root_bank_ix = create_update_and_cache_quote_banks(
-                &perp_markets,
-                quote_root_bank,
-                quote_node_banks,
+    tokio::spawn(async move {
+        let current_slot = current_slot.clone();
+
+        let prioritization_fee_ix =
+            solana_sdk::compute_budget::ComputeBudgetInstruction::set_compute_unit_price(
+                prioritization_fee,
             );
 
-            let blockhash = blockhash.clone();
+        let mut root_update_ixs = create_root_bank_update_instructions(&perp_markets);
+        let mut cache_prices = vec![create_update_price_cache_instructions(&perp_markets)];
+        let mut update_perp_cache = vec![create_cache_perp_markets_instructions(&perp_markets)];
+        let mut cache_root_bank_ix = vec![create_cache_root_bank_instruction(&perp_markets)];
+        let mut update_funding_ix = create_update_fundings_instructions(&perp_markets);
+        let mut quote_root_bank_ix =
+            create_update_and_cache_quote_banks(&perp_markets, quote_root_bank, quote_node_banks);
 
-            // add prioritization instruction
-            //let prioritization_ix = ComputeBudgetInstruction::set_compute_unit_price(10000);
-            //root_update_ixs.insert(0, prioritization_ix.clone());
+        if prioritization_fee > 0 {
+            root_update_ixs.insert(0, prioritization_fee_ix.clone());
+            cache_prices.insert(0, prioritization_fee_ix.clone());
+            update_perp_cache.insert(0, prioritization_fee_ix.clone());
+            cache_root_bank_ix.insert(0, prioritization_fee_ix.clone());
+            update_funding_ix.insert(0, prioritization_fee_ix.clone());
+            quote_root_bank_ix.insert(0, prioritization_fee_ix.clone());
+        }
 
-            while !exit_signal.load(Ordering::Relaxed) {
+        let blockhash = blockhash.clone();
+
+        // add prioritization instruction
+        //let prioritization_ix = ComputeBudgetInstruction::set_compute_unit_price(10000);
+        //root_update_ixs.insert(0, prioritization_ix.clone());
+
+        while !exit_signal.load(Ordering::Relaxed) {
+            send_transaction(
+                tpu_manager.clone(),
+                cache_prices.as_slice(),
+                blockhash.clone(),
+                current_slot.clone(),
+                &authority,
+                prioritization_fee,
+                KeeperInstruction::CachePrice,
+            )
+            .await;
+
+            send_transaction(
+                tpu_manager.clone(),
+                quote_root_bank_ix.as_slice(),
+                blockhash.clone(),
+                current_slot.clone(),
+                &authority,
+                prioritization_fee,
+                KeeperInstruction::UpdateAndCacheQuoteRootBank,
+            )
+            .await;
+
+            for updates in update_funding_ix.chunks(3) {
                 send_transaction(
-                    tpu_client.clone(),
-                    &[cache_prices.clone()],
+                    tpu_manager.clone(),
+                    updates,
                     blockhash.clone(),
+                    current_slot.clone(),
                     &authority,
-                );
-
-                send_transaction(
-                    tpu_client.clone(),
-                    quote_root_bank_ix.as_slice(),
-                    blockhash.clone(),
-                    &authority,
-                );
-
-                for updates in update_funding_ix.chunks(3) {
-                    send_transaction(tpu_client.clone(), updates, blockhash.clone(), &authority);
-                }
-
-                send_transaction(
-                    tpu_client.clone(),
-                    root_update_ixs.as_slice(),
-                    blockhash.clone(),
-                    &authority,
-                );
-
-                send_transaction(
-                    tpu_client.clone(),
-                    &[update_perp_cache.clone()],
-                    blockhash.clone(),
-                    &authority,
-                );
-
-                send_transaction(
-                    tpu_client.clone(),
-                    &[cache_root_bank_ix.clone()],
-                    blockhash.clone(),
-                    &authority,
-                );
-                std::thread::sleep(std::time::Duration::from_secs(1));
+                    prioritization_fee,
+                    KeeperInstruction::UpdateFunding,
+                )
+                .await;
             }
-        })
-        .unwrap()
+
+            send_transaction(
+                tpu_manager.clone(),
+                root_update_ixs.as_slice(),
+                blockhash.clone(),
+                current_slot.clone(),
+                &authority,
+                prioritization_fee,
+                KeeperInstruction::UpdateRootBanks,
+            )
+            .await;
+
+            send_transaction(
+                tpu_manager.clone(),
+                update_perp_cache.as_slice(),
+                blockhash.clone(),
+                current_slot.clone(),
+                &authority,
+                prioritization_fee,
+                KeeperInstruction::UpdatePerpCache,
+            )
+            .await;
+
+            send_transaction(
+                tpu_manager.clone(),
+                cache_root_bank_ix.as_slice(),
+                blockhash.clone(),
+                current_slot.clone(),
+                &authority,
+                prioritization_fee,
+                KeeperInstruction::CacheRootBanks,
+            )
+            .await;
+            std::thread::sleep(std::time::Duration::from_secs(1));
+        }
+    })
 }

@@ -3,9 +3,8 @@ use std::{
     str::FromStr,
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
-        Arc, RwLock,
+        Arc,
     },
-    thread::{sleep, Builder, JoinHandle},
     time::{Duration, Instant},
 };
 
@@ -17,11 +16,9 @@ use mango_common::Loadable;
 use solana_client::rpc_client::RpcClient;
 use solana_program::{clock::DEFAULT_MS_PER_SLOT, pubkey::Pubkey};
 use solana_sdk::hash::Hash;
+use tokio::{sync::RwLock, task::JoinHandle};
 
-use crate::{
-    mango::GroupConfig,
-    states::{BlockData, PerpMarketCache, TransactionConfirmRecord, TransactionSendRecord},
-};
+use crate::{mango::GroupConfig, states::PerpMarketCache};
 
 // as there are similar modules solana_sdk and solana_program
 // solana internals use solana_sdk but external dependancies like mango use solana program
@@ -61,19 +58,19 @@ pub fn load_from_rpc<T: Loadable>(rpc_client: &RpcClient, pk: &Pubkey) -> T {
     return T::load_from_bytes(acc.data.as_slice()).unwrap().clone();
 }
 
-pub fn get_latest_blockhash(rpc_client: &RpcClient) -> Hash {
+pub async fn get_latest_blockhash(rpc_client: &RpcClient) -> Hash {
     loop {
         match rpc_client.get_latest_blockhash() {
             Ok(blockhash) => return blockhash,
             Err(err) => {
                 info!("Couldn't get last blockhash: {:?}", err);
-                sleep(Duration::from_secs(1));
+                tokio::time::sleep(Duration::from_secs(1)).await;
             }
         };
     }
 }
 
-pub fn get_new_latest_blockhash(client: Arc<RpcClient>, blockhash: &Hash) -> Option<Hash> {
+pub async fn get_new_latest_blockhash(client: Arc<RpcClient>, blockhash: &Hash) -> Option<Hash> {
     let start = Instant::now();
     while start.elapsed().as_secs() < 5 {
         if let Ok(new_blockhash) = client.get_latest_blockhash() {
@@ -85,12 +82,12 @@ pub fn get_new_latest_blockhash(client: Arc<RpcClient>, blockhash: &Hash) -> Opt
         debug!("Got same blockhash ({:?}), will retry...", blockhash);
 
         // Retry ~twice during a slot
-        sleep(Duration::from_millis(DEFAULT_MS_PER_SLOT / 2));
+        tokio::time::sleep(Duration::from_millis(DEFAULT_MS_PER_SLOT / 2)).await;
     }
     None
 }
 
-pub fn poll_blockhash_and_slot(
+pub async fn poll_blockhash_and_slot(
     exit_signal: Arc<AtomicBool>,
     blockhash: Arc<RwLock<Hash>>,
     slot: &AtomicU64,
@@ -100,8 +97,9 @@ pub fn poll_blockhash_and_slot(
     //let mut last_error_log = Instant::now();
     loop {
         let client = client.clone();
-        let old_blockhash = *blockhash.read().unwrap();
+        let old_blockhash = *blockhash.read().await;
         if exit_signal.load(Ordering::Relaxed) {
+            info!("Stopping blockhash thread");
             break;
         }
 
@@ -110,9 +108,9 @@ pub fn poll_blockhash_and_slot(
             slot.store(new_slot, Ordering::Release);
         }
 
-        if let Some(new_blockhash) = get_new_latest_blockhash(client, &old_blockhash) {
+        if let Some(new_blockhash) = get_new_latest_blockhash(client, &old_blockhash).await {
             {
-                *blockhash.write().unwrap() = new_blockhash;
+                *blockhash.write().await = new_blockhash;
             }
             blockhash_last_updated = Instant::now();
         } else {
@@ -121,68 +119,12 @@ pub fn poll_blockhash_and_slot(
             }
         }
 
-        sleep(Duration::from_millis(100));
+        tokio::time::sleep(Duration::from_millis(100)).await;
     }
 }
 
 pub fn seconds_since(dt: DateTime<Utc>) -> i64 {
     Utc::now().signed_duration_since(dt).num_seconds()
-}
-
-pub fn write_transaction_data_into_csv(
-    transaction_save_file: String,
-    tx_confirm_records: Arc<RwLock<Vec<TransactionConfirmRecord>>>,
-    tx_timeout_records: Arc<RwLock<Vec<TransactionSendRecord>>>,
-) {
-    if transaction_save_file.is_empty() {
-        return;
-    }
-    let mut writer = csv::Writer::from_path(transaction_save_file).unwrap();
-    {
-        let rd_lock = tx_confirm_records.read().unwrap();
-        for confirm_record in rd_lock.iter() {
-            writer.serialize(confirm_record).unwrap();
-        }
-
-        let timeout_lk = tx_timeout_records.read().unwrap();
-        for timeout_record in timeout_lk.iter() {
-            writer
-                .serialize(TransactionConfirmRecord {
-                    block_hash: "".to_string(),
-                    confirmed_at: "".to_string(),
-                    confirmed_slot: 0,
-                    error: "Timeout".to_string(),
-                    market: timeout_record.market.to_string(),
-                    market_maker: timeout_record.market_maker.to_string(),
-                    sent_at: timeout_record.sent_at.to_string(),
-                    sent_slot: timeout_record.sent_slot,
-                    signature: timeout_record.signature.to_string(),
-                    slot_leader: "".to_string(),
-                    slot_processed: 0,
-                    successful: false,
-                    timed_out: true,
-                    priority_fees: timeout_record.priority_fees,
-                })
-                .unwrap();
-        }
-    }
-    writer.flush().unwrap();
-}
-
-pub fn write_block_data_into_csv(
-    block_data_csv: String,
-    tx_block_data: Arc<RwLock<Vec<BlockData>>>,
-) {
-    if block_data_csv.is_empty() {
-        return;
-    }
-    let mut writer = csv::Writer::from_path(block_data_csv).unwrap();
-    let data = tx_block_data.read().unwrap();
-
-    for d in data.iter().filter(|x| x.number_of_mm_transactions > 0) {
-        writer.serialize(d).unwrap();
-    }
-    writer.flush().unwrap();
 }
 
 pub fn start_blockhash_polling_service(
@@ -191,17 +133,15 @@ pub fn start_blockhash_polling_service(
     current_slot: Arc<AtomicU64>,
     client: Arc<RpcClient>,
 ) -> JoinHandle<()> {
-    Builder::new()
-        .name("solana-blockhash-poller".to_string())
-        .spawn(move || {
-            poll_blockhash_and_slot(
-                exit_signal,
-                blockhash.clone(),
-                current_slot.as_ref(),
-                client,
-            );
-        })
-        .unwrap()
+    tokio::spawn(async move {
+        poll_blockhash_and_slot(
+            exit_signal,
+            blockhash.clone(),
+            current_slot.as_ref(),
+            client,
+        )
+        .await;
+    })
 }
 
 pub fn get_mango_market_perps_cache(

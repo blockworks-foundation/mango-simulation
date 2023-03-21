@@ -1,8 +1,8 @@
 use std::{cell::RefCell, collections::BTreeMap, convert::TryFrom, mem::size_of};
 
 use arrayref::array_ref;
+use async_channel::Sender;
 use async_trait::async_trait;
-use crossbeam_channel::Sender;
 use log::*;
 use mango::{
     instruction::consume_events,
@@ -27,7 +27,7 @@ pub struct MangoV3PerpCrankSink {
     group_pk: Pubkey,
     cache_pk: Pubkey,
     mango_v3_program: Pubkey,
-    instruction_sender: Sender<Vec<Instruction>>,
+    instruction_sender: Sender<(Pubkey, Vec<Instruction>)>,
 }
 
 impl MangoV3PerpCrankSink {
@@ -36,7 +36,7 @@ impl MangoV3PerpCrankSink {
         group_pk: Pubkey,
         cache_pk: Pubkey,
         mango_v3_program: Pubkey,
-        instruction_sender: Sender<Vec<Instruction>>,
+        instruction_sender: Sender<(Pubkey, Vec<Instruction>)>,
     ) -> Self {
         Self {
             mkt_pks_by_evq_pks: pks
@@ -61,7 +61,7 @@ impl AccountWriteSink for MangoV3PerpCrankSink {
     async fn process(&self, pk: &Pubkey, account: &AccountData) -> Result<(), String> {
         let account = &account.account;
 
-        let ix: Result<Instruction, String> = {
+        let (ix, mkt_pk): (Result<Instruction, String>, Pubkey) = {
             const HEADER_SIZE: usize = size_of::<EventQueueHeader>();
             let header_data = array_ref![account.data(), 0, HEADER_SIZE];
             let header = RefCell::<EventQueueHeader>::new(*bytemuck::from_bytes(header_data));
@@ -127,7 +127,7 @@ impl AccountWriteSink for MangoV3PerpCrankSink {
                 .unwrap(),
             );
 
-            Ok(ix)
+            (Ok(ix), mkt_pk.clone())
         };
 
         // info!(
@@ -135,7 +135,7 @@ impl AccountWriteSink for MangoV3PerpCrankSink {
         //     event_queue.iter().count()
         // );
 
-        if let Err(e) = self.instruction_sender.send(vec![ix?]) {
+        if let Err(e) = self.instruction_sender.send((mkt_pk, vec![ix?])).await {
             return Err(e.to_string());
         }
 

@@ -2,33 +2,31 @@ use std::{
     str::FromStr,
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
-        Arc, RwLock,
+        Arc,
     },
-    thread::{sleep, Builder, JoinHandle},
     time::{Duration, Instant},
 };
 
 use chrono::Utc;
-use crossbeam_channel::Sender;
 use iter_tools::Itertools;
-use log::{debug, error, info, warn};
+use log::{debug, info, warn};
 use mango::{
     instruction::{cancel_all_perp_orders, place_perp_order2},
     matching::Side,
 };
 use rand::{distributions::Uniform, prelude::Distribution, seq::SliceRandom};
-use solana_client::tpu_client::TpuClient;
 use solana_program::pubkey::Pubkey;
-use solana_quic_client::{QuicConfig, QuicConnectionManager, QuicPool};
 use solana_sdk::{
     compute_budget, hash::Hash, instruction::Instruction, message::Message, signature::Keypair,
     signer::Signer, transaction::Transaction,
 };
+use tokio::{sync::RwLock, task::JoinHandle};
 
 use crate::{
     helpers::{to_sdk_instruction, to_sp_pk},
     mango::AccountKeys,
     states::{PerpMarketCache, TransactionSendRecord},
+    tpu_manager::TpuManager,
 };
 
 pub fn create_ask_bid_transaction(
@@ -152,11 +150,10 @@ fn generate_random_fees(
         .collect()
 }
 
-pub fn send_mm_transactions(
+pub async fn send_mm_transactions(
     quotes_per_second: u64,
     perp_market_caches: &Vec<PerpMarketCache>,
-    tx_record_sx: &Sender<TransactionSendRecord>,
-    tpu_client: Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>,
+    tpu_manager: TpuManager,
     mango_account_pk: Pubkey,
     mango_account_signer: &Keypair,
     blockhash: Arc<RwLock<Hash>>,
@@ -181,99 +178,21 @@ pub fn send_mm_transactions(
                 prioritization_fee,
             );
 
-            if let Ok(recent_blockhash) = blockhash.read() {
-                tx.sign(&[mango_account_signer], *recent_blockhash);
-            }
+            let recent_blockhash = *blockhash.read().await;
+            tx.sign(&[mango_account_signer], recent_blockhash);
 
-            tpu_client.send_transaction(&tx);
-            let sent = tx_record_sx.send(TransactionSendRecord {
+            let tx_send_record = TransactionSendRecord {
                 signature: tx.signatures[0],
                 sent_at: Utc::now(),
                 sent_slot: slot.load(Ordering::Acquire),
-                market_maker: mango_account_signer_pk,
-                market: c.perp_market_pk,
+                market_maker: Some(mango_account_signer_pk),
+                market: Some(c.perp_market_pk),
                 priority_fees: prioritization_fee,
-            });
-            if sent.is_err() {
-                println!(
-                    "sending error on channel : {}",
-                    sent.err().unwrap().to_string()
-                );
+                keeper_instruction: None,
+            };
+            if !tpu_manager.send_transaction(&tx, tx_send_record).await {
+                println!("sending failed on tpu client");
             }
-        }
-    }
-}
-
-pub fn send_mm_transactions_batched(
-    txs_batch_size: usize,
-    quotes_per_second: u64,
-    perp_market_caches: &Vec<PerpMarketCache>,
-    tx_record_sx: &Sender<TransactionSendRecord>,
-    tpu_client: Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>,
-    mango_account_pk: Pubkey,
-    mango_account_signer: &Keypair,
-    blockhash: Arc<RwLock<Hash>>,
-    slot: &AtomicU64,
-    prioritization_fee_proba: u8,
-) {
-    let mut transactions = Vec::<_>::with_capacity(txs_batch_size);
-
-    let mango_account_signer_pk = to_sp_pk(&mango_account_signer.pubkey());
-    // update quotes 2x per second
-    for _ in 0..quotes_per_second {
-        for c in perp_market_caches.iter() {
-            let prioritization_fee_for_tx =
-                generate_random_fees(prioritization_fee_proba, txs_batch_size, 100, 1000);
-            for i in 0..txs_batch_size {
-                let prioritization_fee = prioritization_fee_for_tx[i];
-                transactions.push((
-                    create_ask_bid_transaction(
-                        c,
-                        mango_account_pk,
-                        &mango_account_signer,
-                        prioritization_fee,
-                    ),
-                    prioritization_fee,
-                ));
-            }
-
-            if let Ok(recent_blockhash) = blockhash.read() {
-                for tx in &mut transactions {
-                    tx.0.sign(&[mango_account_signer], *recent_blockhash);
-                }
-            }
-
-            if tpu_client
-                .try_send_transaction_batch(
-                    &transactions
-                        .iter()
-                        .map(|x| x.0.clone())
-                        .collect_vec()
-                        .as_slice(),
-                )
-                .is_err()
-            {
-                error!("Sending batch failed");
-                continue;
-            }
-
-            for tx in &transactions {
-                let sent = tx_record_sx.send(TransactionSendRecord {
-                    signature: tx.0.signatures[0],
-                    sent_at: Utc::now(),
-                    sent_slot: slot.load(Ordering::Acquire),
-                    market_maker: mango_account_signer_pk,
-                    market: c.perp_market_pk,
-                    priority_fees: tx.1 as u64,
-                });
-                if sent.is_err() {
-                    error!(
-                        "sending error on channel : {}",
-                        sent.err().unwrap().to_string()
-                    );
-                }
-            }
-            transactions.clear();
         }
     }
 }
@@ -281,26 +200,20 @@ pub fn send_mm_transactions_batched(
 pub fn start_market_making_threads(
     account_keys_parsed: Vec<AccountKeys>,
     perp_market_caches: Vec<PerpMarketCache>,
-    tx_record_sx: Sender<TransactionSendRecord>,
     exit_signal: Arc<AtomicBool>,
     blockhash: Arc<RwLock<Hash>>,
     current_slot: Arc<AtomicU64>,
-    tpu_client: Arc<TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>,
+    tpu_manager: TpuManager,
     duration: &Duration,
     quotes_per_second: u64,
-    txs_batch_size: Option<usize>,
     prioritization_fee_proba: u8,
     number_of_markers_per_mm: u8,
 ) -> Vec<JoinHandle<()>> {
-    let warmup_duration = Duration::from_secs(10);
-    info!("waiting for keepers to warmup for {warmup_duration:?}");
-    sleep(warmup_duration);
-
     let mut rng = rand::thread_rng();
     account_keys_parsed
         .iter()
         .map(|account_keys| {
-            let _exit_signal = exit_signal.clone();
+            let exit_signal = exit_signal.clone();
             let blockhash = blockhash.clone();
             let current_slot = current_slot.clone();
             let duration = duration.clone();
@@ -309,66 +222,50 @@ pub fn start_market_making_threads(
                 Pubkey::from_str(account_keys.mango_account_pks[0].as_str()).unwrap();
             let mango_account_signer =
                 Keypair::from_bytes(account_keys.secret_key.as_slice()).unwrap();
-            let tpu_client = tpu_client.clone();
+            let tpu_manager = tpu_manager.clone();
 
             info!(
                 "wallet: {:?} mango account: {:?}",
                 mango_account_signer.pubkey(),
                 mango_account_pk
             );
-            let tx_record_sx = tx_record_sx.clone();
             let perp_market_caches = perp_market_caches
                 .choose_multiple(&mut rng, number_of_markers_per_mm as usize)
                 .map(|x| x.clone())
                 .collect_vec();
 
-            Builder::new()
-                .name("solana-client-sender".to_string())
-                .spawn(move || {
-                    for _i in 0..duration.as_secs() {
-                        let start = Instant::now();
-
-                        // send market maker transactions
-                        if let Some(txs_batch_size) = txs_batch_size.clone() {
-                            send_mm_transactions_batched(
-                                txs_batch_size,
-                                quotes_per_second,
-                                &perp_market_caches,
-                                &tx_record_sx,
-                                tpu_client.clone(),
-                                mango_account_pk,
-                                &mango_account_signer,
-                                blockhash.clone(),
-                                current_slot.as_ref(),
-                                prioritization_fee_proba,
-                            );
-                        } else {
-                            send_mm_transactions(
-                                quotes_per_second,
-                                &perp_market_caches,
-                                &tx_record_sx,
-                                tpu_client.clone(),
-                                mango_account_pk,
-                                &mango_account_signer,
-                                blockhash.clone(),
-                                current_slot.as_ref(),
-                                prioritization_fee_proba,
-                            );
-                        }
-
-                        let elapsed_millis: u64 = start.elapsed().as_millis() as u64;
-                        if elapsed_millis < 950 {
-                            // 50 ms is reserved for other stuff
-                            sleep(Duration::from_millis(950 - elapsed_millis));
-                        } else {
-                            warn!(
-                                "time taken to send transactions is greater than 1000ms {}",
-                                elapsed_millis
-                            );
-                        }
+            tokio::spawn(async move {
+                for _i in 0..duration.as_secs() {
+                    if exit_signal.load(Ordering::Relaxed) {
+                        break;
                     }
-                })
-                .unwrap()
+
+                    let start = Instant::now();
+
+                    // send market maker transactions
+                    send_mm_transactions(
+                        quotes_per_second,
+                        &perp_market_caches,
+                        tpu_manager.clone(),
+                        mango_account_pk,
+                        &mango_account_signer,
+                        blockhash.clone(),
+                        current_slot.as_ref(),
+                        prioritization_fee_proba,
+                    )
+                    .await;
+
+                    let elapsed_millis: u64 = start.elapsed().as_millis() as u64;
+                    if elapsed_millis < 1000 {
+                        tokio::time::sleep(Duration::from_millis(1000 - elapsed_millis)).await;
+                    } else {
+                        warn!(
+                            "time taken to send transactions is greater than 1000ms {}",
+                            elapsed_millis
+                        );
+                    }
+                }
+            })
         })
         .collect()
 }

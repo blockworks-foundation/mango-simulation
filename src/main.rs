@@ -1,5 +1,5 @@
 use {
-    log::{error, info},
+    log::info,
     serde_json,
     mango_simulation::{
         cli,
@@ -7,71 +7,32 @@ use {
         crank,
         helpers::{
             get_latest_blockhash, get_mango_market_perps_cache, start_blockhash_polling_service,
-            to_sdk_pk, write_block_data_into_csv, write_transaction_data_into_csv,
+            to_sdk_pk,
         },
         keeper::start_keepers,
         mango::{AccountKeys, MangoConfig},
         market_markers::start_market_making_threads,
-        states::{BlockData, PerpMarketCache, TransactionConfirmRecord, TransactionSendRecord},
+        result_writer::initialize_result_writers,
+        states::PerpMarketCache,
+        stats::MangoSimulationStats,
+        tpu_manager::TpuManager,
         websocket_source::KeeperConfig,
     },
-    solana_client::{
-        connection_cache::ConnectionCache, rpc_client::RpcClient, tpu_client::TpuClient,
-    },
-    solana_metrics::datapoint_info,
+    solana_client::{nonblocking::rpc_client::RpcClient as NbRpcClient, rpc_client::RpcClient},
     solana_program::pubkey::Pubkey,
-    solana_sdk::commitment_config::CommitmentConfig,
+    solana_sdk::{commitment_config::CommitmentConfig, signer::keypair::Keypair},
     std::{
         fs,
-        net::{IpAddr, Ipv4Addr},
         str::FromStr,
-        sync::{
-            atomic::{AtomicBool, AtomicU64, Ordering},
-            Arc, RwLock,
-        },
-        thread::sleep,
-        thread::{Builder, JoinHandle},
+        sync::atomic::{AtomicBool, AtomicU64, Ordering},
+        sync::Arc,
         time::Duration,
     },
+    tokio::{sync::RwLock, task::JoinHandle},
 };
 
-#[derive(Default)]
-struct MangoBencherStats {
-    recv_limit: usize,
-    num_confirmed_txs: usize,
-    num_error_txs: usize,
-    num_timeout_txs: usize,
-}
-
-impl MangoBencherStats {
-    fn report(&self, name: &'static str) {
-        datapoint_info!(
-            name,
-            ("recv_limit", self.recv_limit, i64),
-            ("num_confirmed_txs", self.num_confirmed_txs, i64),
-            ("num_error_txs", self.num_error_txs, i64),
-            ("num_timeout_txs", self.num_timeout_txs, i64),
-            (
-                "percent_confirmed_txs",
-                (self.num_confirmed_txs * 100) / self.recv_limit,
-                i64
-            ),
-            (
-                "percent_error_txs",
-                (self.num_error_txs * 100) / self.recv_limit,
-                i64
-            ),
-            (
-                "percent_timeout_txs",
-                (self.num_timeout_txs * 100) / self.recv_limit,
-                i64
-            ),
-        );
-    }
-}
-
-#[tokio::main]
-async fn main() {
+#[tokio::main(flavor = "multi_thread", worker_threads = 10)]
+pub async fn main() -> anyhow::Result<()> {
     solana_logger::setup_with_default("solana=info");
     solana_metrics::set_panic_hook("bench-mango", /*version:*/ None);
 
@@ -89,7 +50,6 @@ async fn main() {
         transaction_save_file,
         block_data_save_file,
         mango_cluster,
-        txs_batch_size,
         priority_fees_proba,
         keeper_authority,
         number_of_markers_per_mm,
@@ -120,32 +80,31 @@ async fn main() {
         .find(|g| g.name == *mango_group_id)
         .unwrap();
 
-    let rpc_client = Arc::new(RpcClient::new_with_commitment(
+    let nb_rpc_client = Arc::new(NbRpcClient::new_with_commitment(
         json_rpc_url.to_string(),
         CommitmentConfig::confirmed(),
     ));
 
-    let connection_cache = ConnectionCache::new_with_client_options(
-        4,
-        None,
-        Some((id, IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)))),
-        None,
-    );
-    let quic_connection_cache = if let ConnectionCache::Quic(connection_cache) = connection_cache {
-        Some(connection_cache)
-    } else {
-        None
-    };
+    let nb_users = account_keys_parsed.len();
 
-    let tpu_client = Arc::new(
-        TpuClient::new_with_connection_cache(
-            rpc_client.clone(),
-            &websocket_url,
-            solana_client::tpu_client::TpuClientConfig::default(),
-            quic_connection_cache.unwrap(),
-        )
-        .unwrap(),
+    let mango_sim_stats = MangoSimulationStats::new(
+        nb_users,
+        *quotes_per_second as usize,
+        number_of_markers_per_mm as usize,
+        duration.as_secs() as usize,
     );
+
+    let (tx_record_sx, tx_record_rx) = tokio::sync::mpsc::unbounded_channel();
+
+    let tpu_manager = TpuManager::new(
+        nb_rpc_client.clone(),
+        websocket_url.clone(),
+        solana_client::tpu_client::TpuClientConfig::default().fanout_slots,
+        Keypair::from_bytes(id.to_bytes().as_slice()).unwrap(),
+        mango_sim_stats.clone(),
+        tx_record_sx.clone(),
+    )
+    .await;
 
     info!(
         "accounts:{:?} markets:{:?} quotes_per_second:{:?} expected_tps:{:?} duration:{:?}",
@@ -153,7 +112,7 @@ async fn main() {
         mango_group_config.perp_markets.len(),
         quotes_per_second,
         account_keys_parsed.len()
-            * mango_group_config.perp_markets.len()
+            * number_of_markers_per_mm as usize
             * quotes_per_second.clone() as usize,
         duration
     );
@@ -164,7 +123,8 @@ async fn main() {
         CommitmentConfig::confirmed(),
     ));
     let exit_signal = Arc::new(AtomicBool::new(false));
-    let blockhash = Arc::new(RwLock::new(get_latest_blockhash(&rpc_client.clone())));
+    let latest_blockhash = get_latest_blockhash(&rpc_client.clone()).await;
+    let blockhash = Arc::new(RwLock::new(latest_blockhash));
     let current_slot = Arc::new(AtomicU64::new(0));
     let blockhash_thread = start_blockhash_polling_service(
         exit_signal.clone(),
@@ -190,19 +150,19 @@ async fn main() {
     let keepers_jl = if let Some(keeper_authority) = keeper_authority {
         let jl = start_keepers(
             exit_signal.clone(),
-            tpu_client.clone(),
+            tpu_manager.clone(),
             perp_market_caches.clone(),
             blockhash.clone(),
+            current_slot.clone(),
             keeper_authority,
             quote_root_bank,
             quote_node_banks,
+            0,
         );
         Some(jl)
     } else {
         None
     };
-
-    let (tx_record_sx, tx_record_rx) = crossbeam_channel::unbounded();
     let from_slot = current_slot.load(Ordering::Relaxed);
     let keeper_config = KeeperConfig {
         program_id: to_sdk_pk(&mango_program_pk),
@@ -212,144 +172,91 @@ async fn main() {
 
     crank::start(
         keeper_config,
-        tx_record_sx.clone(),
         exit_signal.clone(),
         blockhash.clone(),
         current_slot.clone(),
-        tpu_client.clone(),
+        tpu_manager.clone(),
         mango_group_config,
         id,
+        0,
     );
 
-    let mm_threads: Vec<JoinHandle<()>> = start_market_making_threads(
+    let warmup_duration = Duration::from_secs(10);
+    info!("waiting for keepers to warmup for {warmup_duration:?}");
+    tokio::time::sleep(warmup_duration).await;
+
+    let mm_tasks: Vec<JoinHandle<()>> = start_market_making_threads(
         account_keys_parsed.clone(),
         perp_market_caches.clone(),
-        tx_record_sx.clone(),
         exit_signal.clone(),
         blockhash.clone(),
         current_slot.clone(),
-        tpu_client.clone(),
+        tpu_manager,
         &duration,
         *quotes_per_second,
-        *txs_batch_size,
         *priority_fees_proba,
         number_of_markers_per_mm,
     );
 
-    let duration = duration.clone();
-    let quotes_per_second = quotes_per_second.clone();
-    let account_keys_parsed = account_keys_parsed.clone();
-    let tx_confirm_records: Arc<RwLock<Vec<TransactionConfirmRecord>>> =
-        Arc::new(RwLock::new(Vec::new()));
-    let tx_timeout_records: Arc<RwLock<Vec<TransactionSendRecord>>> =
-        Arc::new(RwLock::new(Vec::new()));
+    info!("Number of MM threads {}", mm_tasks.len());
+    drop(tx_record_sx);
+    let mut tasks = vec![];
+    tasks.push(blockhash_thread);
 
-    let tx_block_data = Arc::new(RwLock::new(Vec::<BlockData>::new()));
+    let (tx_status_sx, tx_status_rx) = tokio::sync::broadcast::channel(1024);
+    let (block_status_sx, block_status_rx) = tokio::sync::broadcast::channel(1024);
 
-    let confirmation_thread = Builder::new()
-        .name("solana-client-sender".to_string())
-        .spawn(move || {
-            let mut stats = MangoBencherStats::default();
+    let mut writers_jh = initialize_result_writers(
+        transaction_save_file,
+        block_data_save_file,
+        tx_status_rx,
+        block_status_rx,
+    );
+    tasks.append(&mut writers_jh);
 
-            stats.recv_limit = account_keys_parsed.len()
-                * number_of_markers_per_mm as usize
-                * duration.as_secs() as usize
-                * quotes_per_second as usize;
+    let stats_handle =
+        mango_sim_stats.update_from_tx_status_stream(tx_status_sx.subscribe(), exit_signal.clone());
+    tasks.push(stats_handle);
 
-            //confirmation_by_querying_rpc(recv_limit, rpc_client.clone(), &tx_record_rx, tx_confirm_records.clone(), tx_timeout_records.clone());
-            confirmations_by_blocks(
-                rpc_client.clone(),
-                stats.recv_limit,
-                tx_record_rx,
-                tx_confirm_records.clone(),
-                tx_timeout_records.clone(),
-                tx_block_data.clone(),
-                from_slot,
-            );
-
-            let confirmed: Vec<TransactionConfirmRecord> = {
-                let lock = tx_confirm_records.write().unwrap();
-                (*lock).clone()
-            };
-            stats.num_confirmed_txs = confirmed.len();
-
-            info!(
-                "confirmed {} signatures of {} rate {}%",
-                stats.num_confirmed_txs,
-                stats.recv_limit,
-                (stats.num_confirmed_txs * 100) / stats.recv_limit
-            );
-            stats.num_error_txs = confirmed.iter().filter(|tx| !tx.error.is_empty()).count();
-            info!(
-                "errors counted {} rate {}%",
-                stats.num_error_txs,
-                (stats.num_error_txs as usize * 100) / stats.recv_limit
-            );
-            let timeouts: Vec<TransactionSendRecord> = {
-                let timeouts = tx_timeout_records.clone();
-                let lock = timeouts.write().unwrap();
-                (*lock).clone()
-            };
-            stats.num_timeout_txs = timeouts.len();
-            info!(
-                "timeouts counted {} rate {}%",
-                stats.num_timeout_txs,
-                (stats.num_timeout_txs * 100) / stats.recv_limit
-            );
-            stats.report("mango-bencher");
-            // metrics are submitted every 10s,
-            // it is necessary only because we do it once before the end of the execution
-            sleep(Duration::from_secs(10));
-
-            // let mut confirmation_times = confirmed
-            //     .iter()
-            //     .map(|r| {
-            //         r.confirmed_at
-            //             .signed_duration_since(r.sent_at)
-            //             .num_milliseconds()
-            //     })
-            //     .collect::<Vec<_>>();
-            // confirmation_times.sort();
-            // info!(
-            //     "confirmation times min={} max={} median={}",
-            //     confirmation_times.first().unwrap(),
-            //     confirmation_times.last().unwrap(),
-            //     confirmation_times[confirmation_times.len() / 2]
-            // );
-
-            write_transaction_data_into_csv(
-                transaction_save_file,
-                tx_confirm_records,
-                tx_timeout_records,
-            );
-
-            write_block_data_into_csv(block_data_save_file, tx_block_data);
-        })
-        .unwrap();
-
-    for t in mm_threads {
-        if let Err(err) = t.join() {
-            error!("mm join failed with: {:?}", err);
-        }
-    }
-
-    info!("joined all mm_threads");
-
-    if let Err(err) = confirmation_thread.join() {
-        error!("confirmation join fialed with: {:?}", err);
-    }
-
-    info!("joined confirmation thread");
-
-    exit_signal.store(true, Ordering::Relaxed);
-
-    if let Err(err) = blockhash_thread.join() {
-        error!("blockhash join failed with: {:?}", err);
-    }
+    let mut confirmation_threads = confirmations_by_blocks(
+        nb_rpc_client,
+        tx_record_rx,
+        tx_status_sx,
+        block_status_sx,
+        from_slot,
+        exit_signal.clone(),
+    );
+    tasks.append(&mut confirmation_threads);
 
     if let Some(keepers_jl) = keepers_jl {
-        if let Err(err) = keepers_jl.join() {
-            error!("keeper join failed with: {:?}", err);
-        }
+        tasks.push(keepers_jl);
     }
+
+    {
+        let exit_signal = exit_signal.clone();
+        let mango_sim_stats = mango_sim_stats.clone();
+        let reporting_thread = tokio::spawn(async move {
+            loop {
+                if exit_signal.load(Ordering::Relaxed) {
+                    break;
+                }
+                tokio::time::sleep(Duration::from_secs(60)).await;
+                mango_sim_stats.report(false, "Mango simulation stats");
+            }
+        });
+        tasks.push(reporting_thread);
+    }
+
+    // when all market makers tasks are joined that means we are ready to exit
+    // we start stopping all other process
+    // some processes like confirmation of transactions will take some time and will get additional 2 minutes
+    // to confirm remaining transactions
+    futures::future::join_all(mm_tasks).await;
+    info!("finished market making, joining all other services");
+    println!("finished market making, joining all other services");
+    exit_signal.store(true, Ordering::Relaxed);
+
+    futures::future::join_all(tasks).await;
+    mango_sim_stats.report(true, "Mango simulation stats");
+    Ok(())
 }

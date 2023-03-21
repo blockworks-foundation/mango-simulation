@@ -14,7 +14,6 @@ rust-version = "1.66.1"
 borsh = "0.9.3"
 chrono = "0.4.19"
 clap = "2.33.1"
-crossbeam-channel = "0.5"
 fixed = { version = ">=1.11.0, <1.12.0", features = ["serde"] }
 fixed-macro = "^1.1.1"
 multiqueue = "^0.3.2"
@@ -26,6 +25,7 @@ serde_derive = "1.0.103"
 serde_json = "1.0.79"
 serde_yaml = "0.8.23"
 iter_tools = "0.1.4"
+dashmap = "5.4.0"
 
 mango = { git = "https://github.com/blockworks-foundation/mango-v3.git", tag = "v3.6.0", default-features = false }
 mango-common = { git = "https://github.com/blockworks-foundation/mango-v3.git", tag = "v3.6.0" }
@@ -51,12 +51,13 @@ solana-account-decoder = { git = "https://github.com/solana-labs/solana.git", br
 solana-program = "1.9.17"
 
 thiserror = "1.0"
-csv = "1.0.0"
+csv-async = "1.2"
+async-std = "1.12.0"
 tonic = { version = "0.8.2", features = ["gzip", "tls", "tls-roots"] }
 tokio = { version = "1", features = ["full"] }
 anyhow = "1.0"
 async-channel = "1.6"
-async-trait = "0.1"
+async-trait = "0.1.66"
 prost = "0.11"
 warp = "0.3"
 futures = "0.3.17"

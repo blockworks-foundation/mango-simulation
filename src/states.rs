@@ -4,14 +4,43 @@ use mango::state::PerpMarket;
 use serde::Serialize;
 use solana_program::{pubkey::Pubkey, slot_history::Slot};
 use solana_sdk::signature::Signature;
+use std::fmt;
+
+#[derive(Clone, Debug, Serialize)]
+pub enum KeeperInstruction {
+    ConsumeEvents,
+    CachePrice,
+    UpdateRootBanks,
+    CacheRootBanks,
+    UpdatePerpCache,
+    UpdateAndCacheQuoteRootBank,
+    UpdateFunding,
+}
+
+impl fmt::Display for KeeperInstruction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            KeeperInstruction::ConsumeEvents => write!(f, "ConsumeEvents"),
+            KeeperInstruction::CachePrice => write!(f, "CachePrice"),
+            KeeperInstruction::UpdateRootBanks => write!(f, "UpdateRootBanks"),
+            KeeperInstruction::CacheRootBanks => write!(f, "CacheRootBanks"),
+            KeeperInstruction::UpdatePerpCache => write!(f, "UpdatePerpCache"),
+            KeeperInstruction::UpdateAndCacheQuoteRootBank => {
+                write!(f, "UpdateAndCacheQuoteRootBank")
+            }
+            KeeperInstruction::UpdateFunding => write!(f, "UpdateFunding"),
+        }
+    }
+}
 
 #[derive(Clone, Serialize)]
 pub struct TransactionSendRecord {
     pub signature: Signature,
     pub sent_at: DateTime<Utc>,
     pub sent_slot: Slot,
-    pub market_maker: Pubkey,
-    pub market: Pubkey,
+    pub market_maker: Option<Pubkey>,
+    pub market: Option<Pubkey>,
+    pub keeper_instruction: Option<KeeperInstruction>,
     pub priority_fees: u64,
 }
 
@@ -20,15 +49,16 @@ pub struct TransactionConfirmRecord {
     pub signature: String,
     pub sent_slot: Slot,
     pub sent_at: String,
-    pub confirmed_slot: Slot,
-    pub confirmed_at: String,
+    pub confirmed_slot: Option<Slot>,
+    pub confirmed_at: Option<String>,
     pub successful: bool,
-    pub slot_leader: String,
-    pub error: String,
-    pub market_maker: String,
-    pub market: String,
-    pub block_hash: String,
-    pub slot_processed: Slot,
+    pub slot_leader: Option<String>,
+    pub error: Option<String>,
+    pub market_maker: Option<String>,
+    pub market: Option<String>,
+    pub block_hash: Option<String>,
+    pub slot_processed: Option<Slot>,
+    pub keeper_instruction: Option<KeeperInstruction>,
     pub timed_out: bool,
     pub priority_fees: u64,
 }
