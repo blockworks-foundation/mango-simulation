@@ -233,7 +233,7 @@ dependencies = [
  "bincode",
  "borsh 0.9.3",
  "bytemuck",
- "solana-program 1.15.2",
+ "solana-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror",
 ]
 
@@ -3361,7 +3361,7 @@ dependencies = [
  "safe-transmute",
  "serde",
  "serum_dex",
- "solana-program 1.15.2",
+ "solana-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "spl-token",
  "static_assertions",
  "switchboard-program",
@@ -3375,7 +3375,7 @@ version = "3.0.0"
 source = "git+https://github.com/blockworks-foundation/mango-v3.git?tag=v3.6.0#771cabea1cb848439d282e43bf5f0e20ef7c9703"
 dependencies = [
  "bytemuck",
- "solana-program 1.15.2",
+ "solana-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -3396,7 +3396,7 @@ dependencies = [
  "mango-common",
  "quote 1.0.26",
  "safe-transmute",
- "solana-program 1.15.2",
+ "solana-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 1.0.109",
 ]
 
@@ -3440,14 +3440,14 @@ dependencies = [
  "solana-cli-config",
  "solana-client",
  "solana-core",
- "solana-logger 1.15.3",
+ "solana-logger 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-metrics",
  "solana-net-utils",
- "solana-program 1.15.2",
+ "solana-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-quic-client",
  "solana-rpc",
  "solana-runtime",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-transaction-status",
  "solana-version",
  "thiserror",
@@ -4541,7 +4541,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "serde",
- "solana-program 1.15.2",
+ "solana-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror",
 ]
 
@@ -5516,7 +5516,7 @@ dependencies = [
  "num_enum",
  "safe-transmute",
  "serde",
- "solana-program 1.15.2",
+ "solana-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "spl-token",
  "static_assertions",
  "thiserror",
@@ -5738,8 +5738,8 @@ dependencies = [
 
 [[package]]
 name = "solana-account-decoder"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "Inflector",
  "base64 0.13.1",
@@ -5752,7 +5752,7 @@ dependencies = [
  "serde_json",
  "solana-address-lookup-table-program",
  "solana-config-program",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "spl-token",
  "spl-token-2022",
  "thiserror",
@@ -5761,8 +5761,8 @@ dependencies = [
 
 [[package]]
 name = "solana-address-lookup-table-program"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "bincode",
  "bytemuck",
@@ -5771,18 +5771,18 @@ dependencies = [
  "num-traits",
  "rustc_version 0.4.0",
  "serde",
- "solana-frozen-abi 1.15.3",
- "solana-frozen-abi-macro 1.15.3",
- "solana-program 1.15.3",
+ "solana-frozen-abi 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-frozen-abi-macro 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-program-runtime",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
 ]
 
 [[package]]
 name = "solana-bloom"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "bv",
  "fnv",
@@ -5792,15 +5792,15 @@ dependencies = [
  "rustc_version 0.4.0",
  "serde",
  "serde_derive",
- "solana-frozen-abi 1.15.3",
- "solana-frozen-abi-macro 1.15.3",
- "solana-sdk 1.15.3",
+ "solana-frozen-abi 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-frozen-abi-macro 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
 ]
 
 [[package]]
 name = "solana-bpf-loader-program"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "bincode",
  "byteorder",
@@ -5809,37 +5809,37 @@ dependencies = [
  "rand 0.7.3",
  "solana-measure",
  "solana-program-runtime",
- "solana-sdk 1.15.3",
- "solana-zk-token-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-zk-token-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana_rbpf",
  "thiserror",
 ]
 
 [[package]]
 name = "solana-bucket-map"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "log 0.4.17",
  "memmap2",
  "modular-bitfield",
  "rand 0.7.3",
  "solana-measure",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "tempfile",
 ]
 
 [[package]]
 name = "solana-clap-utils"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "chrono",
  "clap 2.34.0",
  "rpassword",
  "solana-perf",
  "solana-remote-wallet",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
  "tiny-bip39",
  "uriparse",
@@ -5848,8 +5848,8 @@ dependencies = [
 
 [[package]]
 name = "solana-cli-config"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "dirs-next",
  "lazy_static",
@@ -5857,14 +5857,14 @@ dependencies = [
  "serde_derive",
  "serde_yaml 0.9.19",
  "solana-clap-utils",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "url 2.3.1",
 ]
 
 [[package]]
 name = "solana-client"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "async-trait",
  "bincode",
@@ -5886,7 +5886,7 @@ dependencies = [
  "solana-rpc-client",
  "solana-rpc-client-api",
  "solana-rpc-client-nonce-utils",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-streamer",
  "solana-thin-client",
  "solana-tpu-client",
@@ -5897,30 +5897,30 @@ dependencies = [
 
 [[package]]
 name = "solana-compute-budget-program"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "solana-program-runtime",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
 ]
 
 [[package]]
 name = "solana-config-program"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "bincode",
  "chrono",
  "serde",
  "serde_derive",
  "solana-program-runtime",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
 ]
 
 [[package]]
 name = "solana-connection-cache"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "async-trait",
  "bincode",
@@ -5932,15 +5932,15 @@ dependencies = [
  "solana-measure",
  "solana-metrics",
  "solana-net-utils",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
  "tokio",
 ]
 
 [[package]]
 name = "solana-core"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "ahash 0.7.6",
  "base64 0.13.1",
@@ -5970,8 +5970,8 @@ dependencies = [
  "solana-bloom",
  "solana-client",
  "solana-entry",
- "solana-frozen-abi 1.15.3",
- "solana-frozen-abi-macro 1.15.3",
+ "solana-frozen-abi 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-frozen-abi-macro 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-geyser-plugin-manager",
  "solana-gossip",
  "solana-ledger",
@@ -5985,7 +5985,7 @@ dependencies = [
  "solana-rpc",
  "solana-rpc-client-api",
  "solana-runtime",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-send-transaction-service",
  "solana-streamer",
  "solana-tpu-client",
@@ -6002,8 +6002,8 @@ dependencies = [
 
 [[package]]
 name = "solana-entry"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "bincode",
  "crossbeam-channel",
@@ -6019,13 +6019,13 @@ dependencies = [
  "solana-metrics",
  "solana-perf",
  "solana-rayon-threadlimit",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
 ]
 
 [[package]]
 name = "solana-faucet"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "bincode",
  "byteorder",
@@ -6036,9 +6036,9 @@ dependencies = [
  "serde_derive",
  "solana-clap-utils",
  "solana-cli-config",
- "solana-logger 1.15.3",
+ "solana-logger 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-metrics",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-version",
  "spl-memo",
  "thiserror",
@@ -6074,15 +6074,15 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "sha2 0.10.6",
- "solana-frozen-abi-macro 1.15.2",
+ "solana-frozen-abi-macro 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "subtle",
  "thiserror",
 ]
 
 [[package]]
 name = "solana-frozen-abi"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "ahash 0.7.6",
  "blake3",
@@ -6107,7 +6107,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "sha2 0.10.6",
- "solana-frozen-abi-macro 1.15.3",
+ "solana-frozen-abi-macro 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "subtle",
  "thiserror",
 ]
@@ -6126,8 +6126,8 @@ dependencies = [
 
 [[package]]
 name = "solana-frozen-abi-macro"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "proc-macro2 1.0.52",
  "quote 1.0.26",
@@ -6137,19 +6137,19 @@ dependencies = [
 
 [[package]]
 name = "solana-geyser-plugin-interface"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "log 0.4.17",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-transaction-status",
  "thiserror",
 ]
 
 [[package]]
 name = "solana-geyser-plugin-manager"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "bs58 0.4.0",
  "crossbeam-channel",
@@ -6162,15 +6162,15 @@ dependencies = [
  "solana-metrics",
  "solana-rpc",
  "solana-runtime",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-transaction-status",
  "thiserror",
 ]
 
 [[package]]
 name = "solana-gossip"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "bincode",
  "bv",
@@ -6194,17 +6194,17 @@ dependencies = [
  "solana-clap-utils",
  "solana-client",
  "solana-entry",
- "solana-frozen-abi 1.15.3",
- "solana-frozen-abi-macro 1.15.3",
+ "solana-frozen-abi 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-frozen-abi-macro 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-ledger",
- "solana-logger 1.15.3",
+ "solana-logger 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-measure",
  "solana-metrics",
  "solana-net-utils",
  "solana-perf",
  "solana-rayon-threadlimit",
  "solana-runtime",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-streamer",
  "solana-thin-client",
  "solana-tpu-client",
@@ -6216,8 +6216,8 @@ dependencies = [
 
 [[package]]
 name = "solana-ledger"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "assert_matches",
  "bincode",
@@ -6249,15 +6249,15 @@ dependencies = [
  "solana-account-decoder",
  "solana-bpf-loader-program",
  "solana-entry",
- "solana-frozen-abi 1.15.3",
- "solana-frozen-abi-macro 1.15.3",
+ "solana-frozen-abi 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-frozen-abi-macro 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-measure",
  "solana-metrics",
  "solana-perf",
  "solana-program-runtime",
  "solana-rayon-threadlimit",
  "solana-runtime",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-stake-program",
  "solana-storage-bigtable",
  "solana-storage-proto",
@@ -6286,8 +6286,8 @@ dependencies = [
 
 [[package]]
 name = "solana-logger"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "env_logger",
  "lazy_static",
@@ -6296,40 +6296,40 @@ dependencies = [
 
 [[package]]
 name = "solana-measure"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "log 0.4.17",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
 ]
 
 [[package]]
 name = "solana-merkle-tree"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "fast-math",
  "matches",
- "solana-program 1.15.3",
+ "solana-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
 ]
 
 [[package]]
 name = "solana-metrics"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "crossbeam-channel",
  "gethostname",
  "lazy_static",
  "log 0.4.17",
  "reqwest",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
 ]
 
 [[package]]
 name = "solana-net-utils"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "bincode",
  "clap 3.2.23",
@@ -6340,8 +6340,8 @@ dependencies = [
  "serde",
  "serde_derive",
  "socket2",
- "solana-logger 1.15.3",
- "solana-sdk 1.15.3",
+ "solana-logger 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-version",
  "tokio",
  "url 2.3.1",
@@ -6349,8 +6349,8 @@ dependencies = [
 
 [[package]]
 name = "solana-perf"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "ahash 0.7.6",
  "bincode",
@@ -6369,14 +6369,14 @@ dependencies = [
  "serde",
  "solana-metrics",
  "solana-rayon-threadlimit",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-vote-program",
 ]
 
 [[package]]
 name = "solana-poh"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "core_affinity",
  "crossbeam-channel",
@@ -6386,7 +6386,7 @@ dependencies = [
  "solana-measure",
  "solana-metrics",
  "solana-runtime",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sys-tuner",
  "thiserror",
 ]
@@ -6436,9 +6436,9 @@ dependencies = [
  "serde_json",
  "sha2 0.10.6",
  "sha3 0.10.6",
- "solana-frozen-abi 1.15.2",
- "solana-frozen-abi-macro 1.15.2",
- "solana-sdk-macro 1.15.2",
+ "solana-frozen-abi 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk-macro 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror",
  "tiny-bip39",
  "wasm-bindgen",
@@ -6447,8 +6447,8 @@ dependencies = [
 
 [[package]]
 name = "solana-program"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "ark-bn254",
  "ark-ec",
@@ -6489,9 +6489,9 @@ dependencies = [
  "serde_json",
  "sha2 0.10.6",
  "sha3 0.10.6",
- "solana-frozen-abi 1.15.3",
- "solana-frozen-abi-macro 1.15.3",
- "solana-sdk-macro 1.15.3",
+ "solana-frozen-abi 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-frozen-abi-macro 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-sdk-macro 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
  "tiny-bip39",
  "wasm-bindgen",
@@ -6500,8 +6500,8 @@ dependencies = [
 
 [[package]]
 name = "solana-program-runtime"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "base64 0.13.1",
  "bincode",
@@ -6516,19 +6516,19 @@ dependencies = [
  "rand 0.7.3",
  "rustc_version 0.4.0",
  "serde",
- "solana-frozen-abi 1.15.3",
- "solana-frozen-abi-macro 1.15.3",
+ "solana-frozen-abi 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-frozen-abi-macro 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-measure",
  "solana-metrics",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana_rbpf",
  "thiserror",
 ]
 
 [[package]]
 name = "solana-pubsub-client"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "crossbeam-channel",
  "futures-util",
@@ -6540,7 +6540,7 @@ dependencies = [
  "serde_json",
  "solana-account-decoder",
  "solana-rpc-client-api",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -6551,8 +6551,8 @@ dependencies = [
 
 [[package]]
 name = "solana-quic-client"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "async-mutex",
  "async-trait",
@@ -6569,7 +6569,7 @@ dependencies = [
  "solana-metrics",
  "solana-net-utils",
  "solana-rpc-client-api",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-streamer",
  "solana-tpu-client",
  "thiserror",
@@ -6578,8 +6578,8 @@ dependencies = [
 
 [[package]]
 name = "solana-rayon-threadlimit"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "lazy_static",
  "num_cpus",
@@ -6587,8 +6587,8 @@ dependencies = [
 
 [[package]]
 name = "solana-remote-wallet"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "console",
  "dialoguer",
@@ -6598,15 +6598,15 @@ dependencies = [
  "parking_lot 0.12.1",
  "qstring",
  "semver 1.0.17",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
  "uriparse",
 ]
 
 [[package]]
 name = "solana-rpc"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "base64 0.13.1",
  "bincode",
@@ -6640,7 +6640,7 @@ dependencies = [
  "solana-rayon-threadlimit",
  "solana-rpc-client-api",
  "solana-runtime",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-send-transaction-service",
  "solana-stake-program",
  "solana-storage-bigtable",
@@ -6659,8 +6659,8 @@ dependencies = [
 
 [[package]]
 name = "solana-rpc-client"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "async-trait",
  "base64 0.13.1",
@@ -6675,7 +6675,7 @@ dependencies = [
  "serde_json",
  "solana-account-decoder",
  "solana-rpc-client-api",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-transaction-status",
  "solana-version",
  "solana-vote-program",
@@ -6684,8 +6684,8 @@ dependencies = [
 
 [[package]]
 name = "solana-rpc-client-api"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "base64 0.13.1",
  "bs58 0.4.0",
@@ -6696,7 +6696,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "solana-account-decoder",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-transaction-status",
  "solana-version",
  "spl-token-2022",
@@ -6705,20 +6705,20 @@ dependencies = [
 
 [[package]]
 name = "solana-rpc-client-nonce-utils"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "clap 2.34.0",
  "solana-clap-utils",
  "solana-rpc-client",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
 ]
 
 [[package]]
 name = "solana-runtime"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "arrayref",
  "bincode",
@@ -6756,18 +6756,18 @@ dependencies = [
  "solana-bucket-map",
  "solana-compute-budget-program",
  "solana-config-program",
- "solana-frozen-abi 1.15.3",
- "solana-frozen-abi-macro 1.15.3",
+ "solana-frozen-abi 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-frozen-abi-macro 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-measure",
  "solana-metrics",
  "solana-perf",
  "solana-program-runtime",
  "solana-rayon-threadlimit",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-stake-program",
  "solana-vote-program",
  "solana-zk-token-proof-program",
- "solana-zk-token-sdk 1.15.3",
+ "solana-zk-token-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "strum",
  "strum_macros",
  "symlink",
@@ -6820,11 +6820,11 @@ dependencies = [
  "serde_with",
  "sha2 0.10.6",
  "sha3 0.10.6",
- "solana-frozen-abi 1.15.2",
- "solana-frozen-abi-macro 1.15.2",
- "solana-logger 1.15.2",
- "solana-program 1.15.2",
- "solana-sdk-macro 1.15.2",
+ "solana-frozen-abi 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-logger 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk-macro 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror",
  "uriparse",
  "wasm-bindgen",
@@ -6832,8 +6832,8 @@ dependencies = [
 
 [[package]]
 name = "solana-sdk"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "assert_matches",
  "base64 0.13.1",
@@ -6872,11 +6872,11 @@ dependencies = [
  "serde_with",
  "sha2 0.10.6",
  "sha3 0.10.6",
- "solana-frozen-abi 1.15.3",
- "solana-frozen-abi-macro 1.15.3",
- "solana-logger 1.15.3",
- "solana-program 1.15.3",
- "solana-sdk-macro 1.15.3",
+ "solana-frozen-abi 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-frozen-abi-macro 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-logger 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-sdk-macro 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
  "uriparse",
  "wasm-bindgen",
@@ -6897,8 +6897,8 @@ dependencies = [
 
 [[package]]
 name = "solana-sdk-macro"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "bs58 0.4.0",
  "proc-macro2 1.0.52",
@@ -6909,8 +6909,8 @@ dependencies = [
 
 [[package]]
 name = "solana-send-transaction-service"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "crossbeam-channel",
  "log 0.4.17",
@@ -6918,28 +6918,28 @@ dependencies = [
  "solana-measure",
  "solana-metrics",
  "solana-runtime",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-tpu-client",
 ]
 
 [[package]]
 name = "solana-stake-program"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "bincode",
  "log 0.4.17",
  "rustc_version 0.4.0",
  "solana-config-program",
  "solana-program-runtime",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-vote-program",
 ]
 
 [[package]]
 name = "solana-storage-bigtable"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "backoff",
  "bincode",
@@ -6960,7 +6960,7 @@ dependencies = [
  "serde_derive",
  "smpl_jwt",
  "solana-metrics",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-storage-proto",
  "solana-transaction-status",
  "thiserror",
@@ -6971,8 +6971,8 @@ dependencies = [
 
 [[package]]
 name = "solana-storage-proto"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "bincode",
  "bs58 0.4.0",
@@ -6980,15 +6980,15 @@ dependencies = [
  "protobuf-src",
  "serde",
  "solana-account-decoder",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-transaction-status",
  "tonic-build 0.8.4",
 ]
 
 [[package]]
 name = "solana-streamer"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "crossbeam-channel",
  "futures-util",
@@ -7009,7 +7009,7 @@ dependencies = [
  "rustls 0.20.8",
  "solana-metrics",
  "solana-perf",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
  "tokio",
  "x509-parser",
@@ -7017,14 +7017,14 @@ dependencies = [
 
 [[package]]
 name = "solana-sys-tuner"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "clap 2.34.0",
  "libc",
  "log 0.4.17",
  "nix",
- "solana-logger 1.15.3",
+ "solana-logger 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-version",
  "sysctl",
  "unix_socket2",
@@ -7033,8 +7033,8 @@ dependencies = [
 
 [[package]]
 name = "solana-thin-client"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "bincode",
  "log 0.4.17",
@@ -7042,14 +7042,14 @@ dependencies = [
  "solana-connection-cache",
  "solana-rpc-client",
  "solana-rpc-client-api",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-tpu-client",
 ]
 
 [[package]]
 name = "solana-tpu-client"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "async-trait",
  "bincode",
@@ -7066,15 +7066,15 @@ dependencies = [
  "solana-pubsub-client",
  "solana-rpc-client",
  "solana-rpc-client-api",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
  "tokio",
 ]
 
 [[package]]
 name = "solana-transaction-status"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "Inflector",
  "base64 0.13.1",
@@ -7088,7 +7088,7 @@ dependencies = [
  "serde_json",
  "solana-account-decoder",
  "solana-address-lookup-table-program",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "spl-associated-token-account",
  "spl-memo",
  "spl-token",
@@ -7098,13 +7098,13 @@ dependencies = [
 
 [[package]]
 name = "solana-udp-client"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "async-trait",
  "solana-connection-cache",
  "solana-net-utils",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-streamer",
  "solana-tpu-client",
  "thiserror",
@@ -7113,23 +7113,23 @@ dependencies = [
 
 [[package]]
 name = "solana-version"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "log 0.4.17",
  "rustc_version 0.4.0",
  "semver 1.0.17",
  "serde",
  "serde_derive",
- "solana-frozen-abi 1.15.3",
- "solana-frozen-abi-macro 1.15.3",
- "solana-sdk 1.15.3",
+ "solana-frozen-abi 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-frozen-abi-macro 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
 ]
 
 [[package]]
 name = "solana-vote-program"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "bincode",
  "log 0.4.17",
@@ -7138,27 +7138,27 @@ dependencies = [
  "rustc_version 0.4.0",
  "serde",
  "serde_derive",
- "solana-frozen-abi 1.15.3",
- "solana-frozen-abi-macro 1.15.3",
+ "solana-frozen-abi 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-frozen-abi-macro 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-metrics",
- "solana-program 1.15.3",
+ "solana-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-program-runtime",
- "solana-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
 ]
 
 [[package]]
 name = "solana-zk-token-proof-program"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "bytemuck",
  "getrandom 0.1.16",
  "num-derive",
  "num-traits",
  "solana-program-runtime",
- "solana-sdk 1.15.3",
- "solana-zk-token-sdk 1.15.3",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-zk-token-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
 ]
 
 [[package]]
@@ -7185,8 +7185,8 @@ dependencies = [
  "serde",
  "serde_json",
  "sha3 0.9.1",
- "solana-program 1.15.2",
- "solana-sdk 1.15.2",
+ "solana-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "subtle",
  "thiserror",
  "zeroize",
@@ -7194,8 +7194,8 @@ dependencies = [
 
 [[package]]
 name = "solana-zk-token-sdk"
-version = "1.15.3"
-source = "git+https://github.com/solana-labs/solana.git?branch=v1.15#b1bdeb1e8b6b29b24fbd4ce811469bb60dc4b11f"
+version = "1.15.2"
+source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "aes-gcm-siv",
  "arrayref",
@@ -7215,8 +7215,8 @@ dependencies = [
  "serde",
  "serde_json",
  "sha3 0.9.1",
- "solana-program 1.15.3",
- "solana-sdk 1.15.3",
+ "solana-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "subtle",
  "thiserror",
  "zeroize",
@@ -7273,7 +7273,7 @@ dependencies = [
  "borsh 0.9.3",
  "num-derive",
  "num-traits",
- "solana-program 1.15.2",
+ "solana-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "spl-token",
  "spl-token-2022",
  "thiserror",
@@ -7285,7 +7285,7 @@ version = "3.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd0dc6f70db6bacea7ff25870b016a65ba1d1b6013536f08e4fd79a8f9005325"
 dependencies = [
- "solana-program 1.15.2",
+ "solana-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -7299,7 +7299,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "num_enum",
- "solana-program 1.15.2",
+ "solana-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror",
 ]
 
@@ -7314,8 +7314,8 @@ dependencies = [
  "num-derive",
  "num-traits",
  "num_enum",
- "solana-program 1.15.2",
- "solana-zk-token-sdk 1.15.2",
+ "solana-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-zk-token-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "spl-memo",
  "spl-token",
  "thiserror",
@@ -7389,7 +7389,7 @@ dependencies = [
  "bytemuck",
  "byteorder",
  "quick-protobuf",
- "solana-program 1.15.2",
+ "solana-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "switchboard-protos",
  "switchboard-utils",
 ]
@@ -7419,7 +7419,7 @@ dependencies = [
  "quick-protobuf",
  "rust_decimal",
  "rust_decimal_macros",
- "solana-program 1.15.2",
+ "solana-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "switchboard-protos",
 ]
 

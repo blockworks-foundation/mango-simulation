@@ -30,20 +30,20 @@ dashmap = "5.4.0"
 mango = { git = "https://github.com/blockworks-foundation/mango-v3.git", tag = "v3.6.0", default-features = false }
 mango-common = { git = "https://github.com/blockworks-foundation/mango-v3.git", tag = "v3.6.0" }
 
-solana-client = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
-solana-core = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
-solana-metrics = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
-solana-rpc = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
-solana-runtime = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
-solana-sdk = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
-solana-clap-utils = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
-solana-cli-config = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
-solana-net-utils = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
-solana-version = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
-solana-logger = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
-solana-transaction-status = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
-solana-quic-client = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
-solana-account-decoder = { git = "https://github.com/solana-labs/solana.git", branch="v1.15" }
+solana-client = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.2" }
+solana-core = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.2" }
+solana-metrics = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.2" }
+solana-rpc = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.2" }
+solana-runtime = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.2" }
+solana-sdk = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.2" }
+solana-clap-utils = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.2" }
+solana-cli-config = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.2" }
+solana-net-utils = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.2" }
+solana-version = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.2" }
+solana-logger = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.2" }
+solana-transaction-status = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.2" }
+solana-quic-client = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.2" }
+solana-account-decoder = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.2" }
 
 # pin program to mango-v3 version of solana sdk
 # now we can use sdk for recent version and program for legacy
