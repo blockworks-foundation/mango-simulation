@@ -162,7 +162,7 @@ impl MangoSimulationStats {
         }
     }
 
-    pub fn report(&self, is_final: bool, name: &'static str) {
+    pub fn report(&mut self, is_final: bool, name: &'static str) {
         let num_sent = self.counters.num_sent.load(Ordering::Relaxed);
         let num_confirmed_txs = self.counters.num_confirmed_txs.load(Ordering::Relaxed);
         let num_successful = self.counters.num_successful.load(Ordering::Relaxed);
@@ -265,16 +265,16 @@ impl MangoSimulationStats {
         );
 
         println!(
-            "Transactions confirmed {:.2}%",
-            (num_confirmed_txs as f64 / num_sent as f64) * 100.0
+            "Transactions confirmed {}%",
+            (num_confirmed_txs * 100).checked_div(num_sent).unwrap_or(0)
         );
         println!(
-            "Transactions successful {:.2}%",
-            (num_successful as f64 / num_sent as f64) * 100.0
+            "Transactions successful {}%",
+            (num_successful * 100).checked_div(num_sent).unwrap_or(0)
         );
         println!(
-            "Transactions timed out {:.2}%",
-            (num_timeout_txs as f64 / num_sent as f64) * 100.0
+            "Transactions timed out {}%",
+            (num_timeout_txs * 100).checked_div(num_sent).unwrap_or(0)
         );
         println!("\n\n");
 
@@ -288,20 +288,39 @@ impl MangoSimulationStats {
             ("num_timeout_txs", num_timeout_txs, i64),
             (
                 "percent_confirmed_txs",
-                (num_confirmed_txs * 100) / num_sent,
+                (num_confirmed_txs * 100).checked_div(num_sent).unwrap_or(0),
                 f64
             ),
             (
                 "percent_successful_txs",
-                (num_confirmed_txs * 100) / num_sent,
+                (num_confirmed_txs * 100).checked_div(num_sent).unwrap_or(0),
                 f64
             ),
-            ("percent_error_txs", (num_error_txs * 100) / num_sent, f64),
+            (
+                "percent_error_txs",
+                (num_error_txs * 100).checked_div(num_sent).unwrap_or(0),
+                f64
+            ),
             (
                 "percent_timeout_txs",
-                (num_timeout_txs * 100) / num_sent,
+                (num_timeout_txs * 100).checked_div(num_sent).unwrap_or(0),
                 f64
             ),
+            ("keeper_consume_events_sent", num_consume_events_txs, i64),
+            ("keeper_consume_events_success", succ_consume_events_txs, i64),
+            ("keeper_cache_price_sent", num_cache_price_txs, i64),
+            ("keeper_cache_price_success", succ_cache_price_txs, i64),
+            ("keeper_update_and_cache_qb_sent", num_update_and_cache_quote_bank_txs, i64),
+            ("keeper_update_and_cache_qb_succ", succ_update_and_cache_quote_bank_txs, i64),
+            ("keeper_update_root_banks_sent", num_update_root_banks_txs, i64),
+            ("keeper_update_root_banks_succ", succ_update_root_banks_txs, i64),
+            ("keeper_cache_root_banks_sent", num_cache_root_banks_txs, i64),
+            ("keeper_cache_root_banks_succ", succ_cache_root_banks_txs, i64),
+            ("keeper_update_perp_cache_sent", num_update_perp_cache_txs, i64),
+            ("keeper_update_perp_cache_succ", succ_update_perp_cache_txs, i64),
+            ("keeper_update_funding_sent", num_update_funding_txs, i64),
+            ("keeper_update_funding_succ", succ_update_funding_txs, i64),
         );
+        self.counters = Counters::default();
     }
 }

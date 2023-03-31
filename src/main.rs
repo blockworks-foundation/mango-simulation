@@ -31,9 +31,11 @@ use {
     tokio::{sync::RwLock, task::JoinHandle},
 };
 
+const METRICS_NAME: &str = "mango-bencher";
+
 #[tokio::main(flavor = "multi_thread", worker_threads = 10)]
 pub async fn main() -> anyhow::Result<()> {
-    solana_logger::setup_with_default("solana=info");
+    solana_logger::setup_with_default("info");
     solana_metrics::set_panic_hook("bench-mango", /*version:*/ None);
 
     let matches = cli::build_args(solana_version::version!()).get_matches();
@@ -87,7 +89,7 @@ pub async fn main() -> anyhow::Result<()> {
 
     let nb_users = account_keys_parsed.len();
 
-    let mango_sim_stats = MangoSimulationStats::new(
+    let mut mango_sim_stats = MangoSimulationStats::new(
         nb_users,
         *quotes_per_second as usize,
         number_of_markers_per_mm as usize,
@@ -234,14 +236,14 @@ pub async fn main() -> anyhow::Result<()> {
 
     {
         let exit_signal = exit_signal.clone();
-        let mango_sim_stats = mango_sim_stats.clone();
+        let mut mango_sim_stats = mango_sim_stats.clone();
         let reporting_thread = tokio::spawn(async move {
             loop {
                 if exit_signal.load(Ordering::Relaxed) {
                     break;
                 }
                 tokio::time::sleep(Duration::from_secs(60)).await;
-                mango_sim_stats.report(false, "Mango simulation stats");
+                mango_sim_stats.report(false, METRICS_NAME);
             }
         });
         tasks.push(reporting_thread);
@@ -257,6 +259,6 @@ pub async fn main() -> anyhow::Result<()> {
     exit_signal.store(true, Ordering::Relaxed);
 
     futures::future::join_all(tasks).await;
-    mango_sim_stats.report(true, "Mango simulation stats");
+    mango_sim_stats.report(true, METRICS_NAME);
     Ok(())
 }
