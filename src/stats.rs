@@ -302,6 +302,20 @@ impl MangoSimulationStats {
                 (num_timeout_txs * 100) / num_sent,
                 f64
             ),
+            ("keeper_consume_events_sent", num_consume_events_txs, i64),
+            ("keeper_consume_events_success", succ_consume_events_txs, i64),
+            ("keeper_cache_price_sent", num_cache_price_txs, i64),
+            ("keeper_cache_price_success", succ_cache_price_txs, i64),
+            ("keeper_update_and_cache_qb_sent", num_update_and_cache_quote_bank_txs, i64),
+            ("keeper_update_and_cache_qb_succ", succ_update_and_cache_quote_bank_txs, i64),
+            ("keeper_update_root_banks_sent", num_update_root_banks_txs, i64),
+            ("keeper_update_root_banks_succ", succ_update_root_banks_txs, i64),
+            ("keeper_cache_root_banks_sent", num_cache_root_banks_txs, i64),
+            ("keeper_cache_root_banks_succ", succ_cache_root_banks_txs, i64),
+            ("keeper_update_perp_cache_sent", num_update_perp_cache_txs, i64),
+            ("keeper_update_perp_cache_succ", succ_update_perp_cache_txs, i64),
+            ("keeper_update_funding_sent", num_update_funding_txs, i64),
+            ("keeper_update_funding_succ", succ_update_funding_txs, i64),
         );
     }
 }
