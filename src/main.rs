@@ -89,7 +89,7 @@ pub async fn main() -> anyhow::Result<()> {
 
     let nb_users = account_keys_parsed.len();
 
-    let mango_sim_stats = MangoSimulationStats::new(
+    let mut mango_sim_stats = MangoSimulationStats::new(
         nb_users,
         *quotes_per_second as usize,
         number_of_markers_per_mm as usize,
@@ -236,7 +236,7 @@ pub async fn main() -> anyhow::Result<()> {
 
     {
         let exit_signal = exit_signal.clone();
-        let mango_sim_stats = mango_sim_stats.clone();
+        let mut mango_sim_stats = mango_sim_stats.clone();
         let reporting_thread = tokio::spawn(async move {
             loop {
                 if exit_signal.load(Ordering::Relaxed) {
