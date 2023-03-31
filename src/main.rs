@@ -35,7 +35,7 @@ const METRICS_NAME: &str = "mango-bencher";
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 10)]
 pub async fn main() -> anyhow::Result<()> {
-    solana_logger::setup_with_default("solana=info");
+    solana_logger::setup_with_default("info");
     solana_metrics::set_panic_hook("bench-mango", /*version:*/ None);
 
     let matches = cli::build_args(solana_version::version!()).get_matches();
