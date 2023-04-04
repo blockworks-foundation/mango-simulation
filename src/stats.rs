@@ -321,6 +321,5 @@ impl MangoSimulationStats {
             ("keeper_update_funding_sent", num_update_funding_txs, i64),
             ("keeper_update_funding_succ", succ_update_funding_txs, i64),
         );
-        self.counters = Counters::default();
     }
 }
