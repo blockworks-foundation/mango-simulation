@@ -1126,18 +1126,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cargo-lock"
-version = "8.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "031718ddb8f78aa5def78a09e90defe30151d1f6c672f937af4dd916429ed996"
-dependencies = [
- "semver 1.0.17",
- "serde",
- "toml 0.5.11",
- "url 2.3.1",
-]
-
-[[package]]
 name = "cc"
 version = "1.0.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1874,31 +1862,11 @@ dependencies = [
 
 [[package]]
 name = "enum-iterator"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4eeac5c5edb79e4e39fe8439ef35207780a11f69c52cbe424ce3dfad4cb78de6"
-dependencies = [
- "enum-iterator-derive 0.7.0",
-]
-
-[[package]]
-name = "enum-iterator"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "706d9e7cf1c7664859d79cd524e4e53ea2b67ea03c98cc2870c5e539695d597e"
 dependencies = [
- "enum-iterator-derive 1.2.0",
-]
-
-[[package]]
-name = "enum-iterator-derive"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c134c37760b27a871ba422106eedbb8247da973a09e82558bf26d619c882b159"
-dependencies = [
- "proc-macro2 1.0.52",
- "quote 1.0.26",
- "syn 1.0.109",
+ "enum-iterator-derive",
 ]
 
 [[package]]
@@ -2349,53 +2317,6 @@ dependencies = [
  "libc",
  "wasi 0.11.0+wasi-snapshot-preview1",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "getset"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e45727250e75cc04ff2846a66397da8ef2b3db8e40e0cef4df67950a07621eb9"
-dependencies = [
- "proc-macro-error",
- "proc-macro2 1.0.52",
- "quote 1.0.26",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "git-version"
-version = "0.3.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6b0decc02f4636b9ccad390dcbe77b722a77efedfa393caf8379a51d5c61899"
-dependencies = [
- "git-version-macro",
- "proc-macro-hack",
-]
-
-[[package]]
-name = "git-version-macro"
-version = "0.3.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe69f1cbdb6e28af2bac214e943b99ce8a0a06b447d15d3e61161b0423139f3f"
-dependencies = [
- "proc-macro-hack",
- "proc-macro2 1.0.52",
- "quote 1.0.26",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "git2"
-version = "0.16.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ccf7f68c2995f392c49fffb4f95ae2c873297830eb25c6bc4c114ce8f4562acc"
-dependencies = [
- "bitflags",
- "libc",
- "libgit2-sys",
- "log 0.4.17",
- "url 2.3.1",
 ]
 
 [[package]]
@@ -3151,18 +3072,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "99227334921fae1a979cf0bfdfcc6b3e5ce376ef57e16fb6fb3ea2ed6095f80c"
 
 [[package]]
-name = "libgit2-sys"
-version = "0.14.2+1.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f3d95f6b51075fe9810a7ae22c7095f12b98005ab364d8544797a825ce946a4"
-dependencies = [
- "cc",
- "libc",
- "libz-sys",
- "pkg-config",
-]
-
-[[package]]
 name = "libloading"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3247,7 +3156,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9702761c3935f8cc2f101793272e202c72b99da8f4224a19ddcf1279a6450bbf"
 dependencies = [
  "cc",
- "libc",
  "pkg-config",
  "vcpkg",
 ]
@@ -3411,7 +3319,6 @@ dependencies = [
  "async-trait",
  "borsh 0.9.3",
  "bytemuck",
- "cargo-lock",
  "chrono",
  "clap 2.34.0",
  "csv-async",
@@ -3419,7 +3326,6 @@ dependencies = [
  "fixed",
  "fixed-macro",
  "futures 0.3.27",
- "git-version",
  "iter_tools",
  "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-core-client",
@@ -3428,7 +3334,6 @@ dependencies = [
  "mango-common",
  "multiqueue",
  "prost 0.11.8",
- "protobuf-src",
  "rand 0.8.5",
  "rayon",
  "serde",
@@ -3453,10 +3358,8 @@ dependencies = [
  "thiserror",
  "tokio",
  "toml 0.7.3",
- "tonic 0.8.3",
- "tonic-build 0.8.4",
- "vergen",
  "warp",
+ "yellowstone-grpc-proto",
 ]
 
 [[package]]
@@ -4368,12 +4271,6 @@ dependencies = [
  "quote 1.0.26",
  "version_check 0.9.4",
 ]
-
-[[package]]
-name = "proc-macro-hack"
-version = "0.5.20+deprecated"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc375e1527247fe1a97d8b7156678dfe7c1af2fc075c9a4db3690ecd2a148068"
 
 [[package]]
 name = "proc-macro2"
@@ -5373,9 +5270,6 @@ name = "semver"
 version = "1.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bebd363326d05ec3e2f532ab7660680f3b02130d780c299bca73469d521bc0ed"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "semver-parser"
@@ -6506,7 +6400,7 @@ dependencies = [
  "base64 0.13.1",
  "bincode",
  "eager",
- "enum-iterator 1.4.0",
+ "enum-iterator",
  "itertools 0.10.5",
  "libc",
  "libloading",
@@ -6945,7 +6839,7 @@ dependencies = [
  "bincode",
  "bytes 1.4.0",
  "bzip2",
- "enum-iterator 1.4.0",
+ "enum-iterator",
  "flate2 1.0.25",
  "futures 0.3.27",
  "goauth",
@@ -7504,20 +7398,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sysinfo"
-version = "0.23.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3977ec2e0520829be45c8a2df70db2bf364714d8a748316a10c3c35d4d2b01c9"
-dependencies = [
- "cfg-if 1.0.0",
- "core-foundation-sys",
- "libc",
- "ntapi",
- "once_cell",
- "winapi 0.3.9",
-]
-
-[[package]]
 name = "tar"
 version = "0.4.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7969,7 +7849,6 @@ dependencies = [
  "axum",
  "base64 0.13.1",
  "bytes 1.4.0",
- "flate2 1.0.25",
  "futures-core",
  "futures-util",
  "h2",
@@ -7981,7 +7860,6 @@ dependencies = [
  "pin-project",
  "prost 0.11.8",
  "prost-derive 0.11.8",
- "rustls-native-certs",
  "rustls-pemfile 1.0.2",
  "tokio",
  "tokio-rustls 0.23.4",
@@ -8342,24 +8220,6 @@ name = "vec_map"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1bddf1187be692e79c5ffeab891132dfb0f236ed36a43c7ed39f1165ee20191"
-
-[[package]]
-name = "vergen"
-version = "7.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1f44ef1afcf5979e34748c12595f9589f3dc4e34abf156fb6d95f9b835568dc"
-dependencies = [
- "anyhow",
- "cfg-if 1.0.0",
- "enum-iterator 0.7.0",
- "getset",
- "git2",
- "rustc_version 0.4.0",
- "rustversion",
- "sysinfo",
- "thiserror",
- "time 0.3.20",
-]
 
 [[package]]
 name = "version_check"
@@ -8816,6 +8676,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aed2e7a52e3744ab4d0c05c20aa065258e84c49fd4226f5191b2ed29712710b4"
 dependencies = [
  "time 0.3.20",
+]
+
+[[package]]
+name = "yellowstone-grpc-proto"
+version = "1.1.0+solana.1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c2688c6f1d930f21f580829f6f896d7d38f90d5b2272e53a8f69a82e72b656f"
+dependencies = [
+ "anyhow",
+ "prost 0.11.8",
+ "protobuf-src",
+ "tonic 0.8.3",
+ "tonic-build 0.8.4",
 ]
 
 [[package]]
