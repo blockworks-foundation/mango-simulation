@@ -103,9 +103,12 @@ pub async fn poll_blockhash_and_slot(
             break;
         }
 
-        let new_slot = client.get_slot().unwrap();
-        {
-            slot.store(new_slot, Ordering::Release);
+        match client.get_slot() {
+            Ok(new_slot) => slot.store(new_slot, Ordering::Release),
+            Err(e) => {
+                info!("Failed to download slot: {}, skip", e);
+                continue;
+            }
         }
 
         if let Some(new_blockhash) = get_new_latest_blockhash(client, &old_blockhash).await {
