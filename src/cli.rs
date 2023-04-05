@@ -21,6 +21,7 @@ pub struct Config {
     pub mango_cluster: String,
     pub txs_batch_size: Option<usize>,
     pub priority_fees_proba: u8,
+    pub keeper_prioritization: u64,
     pub keeper_authority: Option<Keypair>,
     pub number_of_markers_per_mm: u8,
 }
@@ -43,6 +44,7 @@ impl Default for Config {
             priority_fees_proba: 0,
             keeper_authority: None,
             number_of_markers_per_mm: 5,
+            keeper_prioritization: 1000,
         }
     }
 }
@@ -204,6 +206,15 @@ pub fn build_args<'a, 'b>(version: &'b str) -> App<'a, 'b> {
                 .required(false)
                 .help("Number of markets a market maker will trade on at a time"),
         )
+        .arg(
+            Arg::with_name("keeper-prioritization-fees")
+                .long("keeper-prioritization-fees")
+                .value_name("UINT")
+                .min_values(0)
+                .takes_value(true)
+                .required(false)
+                .help("Prioritization fees set for all keeper instructions (1000 by default)")
+        )
 }
 
 /// Parses a clap `ArgMatches` structure into a `Config`
@@ -298,6 +309,11 @@ pub fn extract_args(matches: &ArgMatches) -> Config {
             .parse()
             .expect("can't parse number of markets per market maker"),
         None => 5,
+    };
+
+    args.keeper_prioritization = match matches.value_of("keeper-prioritization-fees") {
+        Some(x) => x.parse().expect("can't parse keeper prioritization fees"),
+        None => 1000,
     };
     args
 }

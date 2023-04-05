@@ -74,13 +74,18 @@ pub fn start(
             "crank-tx-sender signing with keypair pk={:?}",
             identity.pubkey()
         );
+        let prioritization_fee_ix =
+            solana_sdk::compute_budget::ComputeBudgetInstruction::set_compute_unit_price(
+                prioritization_fee,
+            );
+
         loop {
             if exit_signal.load(Ordering::Acquire) {
                 break;
             }
 
-            if let Ok((market, ixs)) = instruction_receiver.recv().await {
-                // TODO add priority fee
+            if let Ok((market, mut ixs)) = instruction_receiver.recv().await {
+                ixs.insert(0, prioritization_fee_ix.clone());
 
                 let tx = Transaction::new_signed_with_payer(
                     &ixs,

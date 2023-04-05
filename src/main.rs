@@ -54,9 +54,11 @@ pub async fn main() -> anyhow::Result<()> {
         priority_fees_proba,
         keeper_authority,
         number_of_markers_per_mm,
+        keeper_prioritization,
         ..
     } = &cli_config;
     let number_of_markers_per_mm = *number_of_markers_per_mm;
+    let keeper_prioritization = *keeper_prioritization;
 
     let transaction_save_file = transaction_save_file.clone();
     let block_data_save_file = block_data_save_file.clone();
@@ -110,7 +112,7 @@ pub async fn main() -> anyhow::Result<()> {
     info!(
         "accounts:{:?} markets:{:?} quotes_per_second:{:?} expected_tps:{:?} duration:{:?}",
         account_keys_parsed.len(),
-        mango_group_config.perp_markets.len(),
+        number_of_markers_per_mm,
         quotes_per_second,
         account_keys_parsed.len()
             * number_of_markers_per_mm as usize
@@ -158,7 +160,7 @@ pub async fn main() -> anyhow::Result<()> {
             keeper_authority,
             quote_root_bank,
             quote_node_banks,
-            0,
+            keeper_prioritization,
         );
         Some(jl)
     } else {
@@ -179,7 +181,7 @@ pub async fn main() -> anyhow::Result<()> {
         tpu_manager.clone(),
         mango_group_config,
         id,
-        0,
+        keeper_prioritization,
     );
 
     let warmup_duration = Duration::from_secs(10);

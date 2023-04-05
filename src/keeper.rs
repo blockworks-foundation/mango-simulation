@@ -190,11 +190,6 @@ pub fn start_keepers(
         }
 
         let blockhash = blockhash.clone();
-
-        // add prioritization instruction
-        //let prioritization_ix = ComputeBudgetInstruction::set_compute_unit_price(10000);
-        //root_update_ixs.insert(0, prioritization_ix.clone());
-
         while !exit_signal.load(Ordering::Relaxed) {
             send_transaction(
                 tpu_manager.clone(),
