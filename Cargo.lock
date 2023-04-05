@@ -3287,6 +3287,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "mango-feeds-connector"
+version = "0.1.0"
+source = "git+https://github.com/blockworks-foundation/mango-feeds.git?branch=ckamm/solana-versions2#002fbcc353f31d07861b9580fa83d126681fbd42"
+dependencies = [
+ "anyhow",
+ "async-channel",
+ "async-trait",
+ "futures 0.3.27",
+ "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-core-client",
+ "log 0.4.17",
+ "rustls 0.20.8",
+ "serde",
+ "serde_derive",
+ "solana-account-decoder 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-client 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-rpc 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tokio",
+ "warp",
+ "yellowstone-grpc-proto",
+]
+
+[[package]]
 name = "mango-logs"
 version = "0.1.0"
 source = "git+https://github.com/blockworks-foundation/mango-v3.git?tag=v3.6.0#771cabea1cb848439d282e43bf5f0e20ef7c9703"
@@ -3332,6 +3356,7 @@ dependencies = [
  "log 0.4.17",
  "mango",
  "mango-common",
+ "mango-feeds-connector",
  "multiqueue",
  "prost 0.11.8",
  "rand 0.8.5",
@@ -3340,21 +3365,21 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "serde_yaml 0.8.26",
- "solana-account-decoder",
- "solana-clap-utils",
- "solana-cli-config",
- "solana-client",
+ "solana-account-decoder 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-clap-utils 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-cli-config 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-core",
  "solana-logger 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-metrics",
- "solana-net-utils",
+ "solana-metrics 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-net-utils 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "solana-quic-client",
- "solana-rpc",
- "solana-runtime",
+ "solana-quic-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rpc 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-runtime 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-transaction-status",
- "solana-version",
+ "solana-transaction-status 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-version 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
  "tokio",
  "toml 0.7.3",
@@ -5633,6 +5658,30 @@ dependencies = [
 [[package]]
 name = "solana-account-decoder"
 version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b7e4ac2e5e6474d17f19341df43c62b62ee1e362bae9b06bc30223252dd4a362"
+dependencies = [
+ "Inflector",
+ "base64 0.13.1",
+ "bincode",
+ "bs58 0.4.0",
+ "bv",
+ "lazy_static",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "solana-address-lookup-table-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-config-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "spl-token",
+ "spl-token-2022",
+ "thiserror",
+ "zstd",
+]
+
+[[package]]
+name = "solana-account-decoder"
+version = "1.15.2"
 source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "Inflector",
@@ -5644,13 +5693,34 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "solana-address-lookup-table-program",
- "solana-config-program",
+ "solana-address-lookup-table-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-config-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "spl-token",
  "spl-token-2022",
  "thiserror",
  "zstd",
+]
+
+[[package]]
+name = "solana-address-lookup-table-program"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "baac6a0dfc38f64e5e5e178e9eeade05ef1a2c644c95062523c6bc21f19f8866"
+dependencies = [
+ "bincode",
+ "bytemuck",
+ "log 0.4.17",
+ "num-derive",
+ "num-traits",
+ "rustc_version 0.4.0",
+ "serde",
+ "solana-frozen-abi 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-program-runtime 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror",
 ]
 
 [[package]]
@@ -5668,9 +5738,28 @@ dependencies = [
  "solana-frozen-abi 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-frozen-abi-macro 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-program-runtime",
+ "solana-program-runtime 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
+]
+
+[[package]]
+name = "solana-bloom"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d7e5d0033ba3e3f598f88964f0a0a87d3a143f9995fc4b326d21d689e4fa74ad"
+dependencies = [
+ "bv",
+ "fnv",
+ "log 0.4.17",
+ "rand 0.7.3",
+ "rayon",
+ "rustc_version 0.4.0",
+ "serde",
+ "serde_derive",
+ "solana-frozen-abi 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -5694,6 +5783,25 @@ dependencies = [
 [[package]]
 name = "solana-bpf-loader-program"
 version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d6438ef9cec10d4c563e916a612bb06f50be13524bbd250de461633bde87e7a"
+dependencies = [
+ "bincode",
+ "byteorder",
+ "libsecp256k1",
+ "log 0.4.17",
+ "rand 0.7.3",
+ "solana-measure 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-program-runtime 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-zk-token-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana_rbpf",
+ "thiserror",
+]
+
+[[package]]
+name = "solana-bpf-loader-program"
+version = "1.15.2"
 source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "bincode",
@@ -5701,12 +5809,27 @@ dependencies = [
  "libsecp256k1",
  "log 0.4.17",
  "rand 0.7.3",
- "solana-measure",
- "solana-program-runtime",
+ "solana-measure 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-program-runtime 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-zk-token-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana_rbpf",
  "thiserror",
+]
+
+[[package]]
+name = "solana-bucket-map"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd2f6926a9f443f8c62f883f7348fc04ee1aa48246748c8193c161752e822b92"
+dependencies = [
+ "log 0.4.17",
+ "memmap2",
+ "modular-bitfield",
+ "rand 0.7.3",
+ "solana-measure 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tempfile",
 ]
 
 [[package]]
@@ -5718,9 +5841,27 @@ dependencies = [
  "memmap2",
  "modular-bitfield",
  "rand 0.7.3",
- "solana-measure",
+ "solana-measure 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "tempfile",
+]
+
+[[package]]
+name = "solana-clap-utils"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8f0a43f9bcf2405e50190cf3943046663caae557db9eb71a628f359e3f4f3eea"
+dependencies = [
+ "chrono",
+ "clap 2.34.0",
+ "rpassword",
+ "solana-perf 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-remote-wallet 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror",
+ "tiny-bip39",
+ "uriparse",
+ "url 2.3.1",
 ]
 
 [[package]]
@@ -5731,12 +5872,28 @@ dependencies = [
  "chrono",
  "clap 2.34.0",
  "rpassword",
- "solana-perf",
- "solana-remote-wallet",
+ "solana-perf 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-remote-wallet 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
  "tiny-bip39",
  "uriparse",
+ "url 2.3.1",
+]
+
+[[package]]
+name = "solana-cli-config"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c79aa0d4d3cef702ca522c1b8dca170eb7137254b6d608f46bcb3a26d6fffd3"
+dependencies = [
+ "dirs-next",
+ "lazy_static",
+ "serde",
+ "serde_derive",
+ "serde_yaml 0.9.19",
+ "solana-clap-utils 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 2.3.1",
 ]
 
@@ -5750,9 +5907,44 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_yaml 0.9.19",
- "solana-clap-utils",
+ "solana-clap-utils 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "url 2.3.1",
+]
+
+[[package]]
+name = "solana-client"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fe890559c3d8e29123ed0bfba47d5d714acb1db2e4a9a981c9171960ae01425"
+dependencies = [
+ "async-trait",
+ "bincode",
+ "enum_dispatch",
+ "futures 0.3.27",
+ "futures-util",
+ "indexmap",
+ "indicatif",
+ "log 0.4.17",
+ "quinn",
+ "rand 0.7.3",
+ "rayon",
+ "solana-connection-cache 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-measure 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-metrics 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-net-utils 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-pubsub-client 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-quic-client 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-rpc-client 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-rpc-client-api 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-rpc-client-nonce-utils 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-streamer 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-thin-client 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-tpu-client 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-udp-client 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -5771,20 +5963,20 @@ dependencies = [
  "quinn",
  "rand 0.7.3",
  "rayon",
- "solana-connection-cache",
- "solana-measure",
- "solana-metrics",
- "solana-net-utils",
- "solana-pubsub-client",
- "solana-quic-client",
- "solana-rpc-client",
- "solana-rpc-client-api",
- "solana-rpc-client-nonce-utils",
+ "solana-connection-cache 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-measure 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-metrics 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-net-utils 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-pubsub-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-quic-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rpc-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rpc-client-api 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rpc-client-nonce-utils 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-streamer",
- "solana-thin-client",
- "solana-tpu-client",
- "solana-udp-client",
+ "solana-streamer 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-thin-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-tpu-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-udp-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
  "tokio",
 ]
@@ -5792,10 +5984,34 @@ dependencies = [
 [[package]]
 name = "solana-compute-budget-program"
 version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "372ab0d248283e6c1b51317bd9a40bc0a6ef076ad29c237e7336cef1934a34f7"
+dependencies = [
+ "solana-program-runtime 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "solana-compute-budget-program"
+version = "1.15.2"
 source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
- "solana-program-runtime",
+ "solana-program-runtime 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+]
+
+[[package]]
+name = "solana-config-program"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ebb520c573b28060cadd8ae0fa6ae116cf74dac01078bc437d8b3e3ab00efd22"
+dependencies = [
+ "bincode",
+ "chrono",
+ "serde",
+ "serde_derive",
+ "solana-program-runtime 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -5807,8 +6023,29 @@ dependencies = [
  "chrono",
  "serde",
  "serde_derive",
- "solana-program-runtime",
+ "solana-program-runtime 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+]
+
+[[package]]
+name = "solana-connection-cache"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c913dfcaf847cecd8866e4aeaa440b34c8a5dae6c1c90b7a8cb3265ff9fc775"
+dependencies = [
+ "async-trait",
+ "bincode",
+ "futures-util",
+ "indexmap",
+ "log 0.4.17",
+ "rand 0.7.3",
+ "rayon",
+ "solana-measure 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-metrics 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-net-utils 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -5823,9 +6060,9 @@ dependencies = [
  "log 0.4.17",
  "rand 0.7.3",
  "rayon",
- "solana-measure",
- "solana-metrics",
- "solana-net-utils",
+ "solana-measure 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-metrics 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-net-utils 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
  "tokio",
@@ -5860,38 +6097,61 @@ dependencies = [
  "rustc_version 0.4.0",
  "serde",
  "serde_derive",
- "solana-address-lookup-table-program",
- "solana-bloom",
- "solana-client",
- "solana-entry",
+ "solana-address-lookup-table-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-bloom 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-entry 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-frozen-abi 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-frozen-abi-macro 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-geyser-plugin-manager",
- "solana-gossip",
- "solana-ledger",
- "solana-measure",
- "solana-metrics",
- "solana-net-utils",
- "solana-perf",
- "solana-poh",
- "solana-program-runtime",
- "solana-rayon-threadlimit",
- "solana-rpc",
- "solana-rpc-client-api",
- "solana-runtime",
+ "solana-gossip 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-ledger 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-measure 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-metrics 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-net-utils 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-perf 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-poh 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-program-runtime 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rayon-threadlimit 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rpc 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rpc-client-api 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-runtime 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-send-transaction-service",
- "solana-streamer",
- "solana-tpu-client",
- "solana-transaction-status",
- "solana-version",
- "solana-vote-program",
+ "solana-send-transaction-service 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-streamer 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-tpu-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-transaction-status 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-version 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-vote-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "sys-info",
  "sysctl",
  "tempfile",
  "thiserror",
  "tokio",
  "trees",
+]
+
+[[package]]
+name = "solana-entry"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d36e528b958d01d41fc482cf794aed4360a90200192b702428eaa82d4925f05"
+dependencies = [
+ "bincode",
+ "crossbeam-channel",
+ "dlopen",
+ "dlopen_derive",
+ "lazy_static",
+ "log 0.4.17",
+ "rand 0.7.3",
+ "rayon",
+ "serde",
+ "solana-measure 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-merkle-tree 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-metrics 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-perf 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-rayon-threadlimit 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -5908,12 +6168,36 @@ dependencies = [
  "rand 0.7.3",
  "rayon",
  "serde",
- "solana-measure",
- "solana-merkle-tree",
- "solana-metrics",
- "solana-perf",
- "solana-rayon-threadlimit",
+ "solana-measure 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-merkle-tree 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-metrics 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-perf 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rayon-threadlimit 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+]
+
+[[package]]
+name = "solana-faucet"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d90180632e0528cd46e0ebfaf98977b24fc4593422be9b200e0dfaf97ee09cc7"
+dependencies = [
+ "bincode",
+ "byteorder",
+ "clap 2.34.0",
+ "crossbeam-channel",
+ "log 0.4.17",
+ "serde",
+ "serde_derive",
+ "solana-clap-utils 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-cli-config 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-logger 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-metrics 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-version 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "spl-memo",
+ "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -5928,12 +6212,12 @@ dependencies = [
  "log 0.4.17",
  "serde",
  "serde_derive",
- "solana-clap-utils",
- "solana-cli-config",
+ "solana-clap-utils 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-cli-config 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-logger 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-metrics",
+ "solana-metrics 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-version",
+ "solana-version 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "spl-memo",
  "thiserror",
  "tokio",
@@ -6036,7 +6320,7 @@ source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e992
 dependencies = [
  "log 0.4.17",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-transaction-status",
+ "solana-transaction-status 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
 ]
 
@@ -6052,12 +6336,60 @@ dependencies = [
  "log 0.4.17",
  "serde_json",
  "solana-geyser-plugin-interface",
- "solana-measure",
- "solana-metrics",
- "solana-rpc",
- "solana-runtime",
+ "solana-measure 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-metrics 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rpc 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-runtime 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-transaction-status",
+ "solana-transaction-status 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "thiserror",
+]
+
+[[package]]
+name = "solana-gossip"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c99fdfc75fbe40aae6d60543786eb9c24fa1a633fb1566f75ca8a0471545115"
+dependencies = [
+ "bincode",
+ "bv",
+ "clap 2.34.0",
+ "crossbeam-channel",
+ "flate2 1.0.25",
+ "indexmap",
+ "itertools 0.10.5",
+ "log 0.4.17",
+ "lru",
+ "matches",
+ "num-traits",
+ "rand 0.7.3",
+ "rand_chacha 0.2.2",
+ "rayon",
+ "rustc_version 0.4.0",
+ "serde",
+ "serde_bytes",
+ "serde_derive",
+ "solana-bloom 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-clap-utils 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-client 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-entry 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-ledger 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-logger 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-measure 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-metrics 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-net-utils 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-perf 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-rayon-threadlimit 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-runtime 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-streamer 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-thin-client 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-tpu-client 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-version 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-vote-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "static_assertions",
  "thiserror",
 ]
 
@@ -6084,28 +6416,88 @@ dependencies = [
  "serde",
  "serde_bytes",
  "serde_derive",
- "solana-bloom",
- "solana-clap-utils",
- "solana-client",
- "solana-entry",
+ "solana-bloom 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-clap-utils 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-entry 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-frozen-abi 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-frozen-abi-macro 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-ledger",
+ "solana-ledger 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-logger 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-measure",
- "solana-metrics",
- "solana-net-utils",
- "solana-perf",
- "solana-rayon-threadlimit",
- "solana-runtime",
+ "solana-measure 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-metrics 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-net-utils 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-perf 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rayon-threadlimit 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-runtime 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-streamer",
- "solana-thin-client",
- "solana-tpu-client",
- "solana-version",
- "solana-vote-program",
+ "solana-streamer 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-thin-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-tpu-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-version 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-vote-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "static_assertions",
  "thiserror",
+]
+
+[[package]]
+name = "solana-ledger"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b84b4dcfe6aaabc5676ac35bba142d598e350b2f70315c94a46179d40e4d41bc"
+dependencies = [
+ "assert_matches",
+ "bincode",
+ "bitflags",
+ "byteorder",
+ "chrono",
+ "chrono-humanize",
+ "crossbeam-channel",
+ "dashmap 4.0.2",
+ "fs_extra",
+ "futures 0.3.27",
+ "itertools 0.10.5",
+ "lazy_static",
+ "libc",
+ "log 0.4.17",
+ "lru",
+ "num_cpus",
+ "num_enum",
+ "prost 0.11.8",
+ "rand 0.7.3",
+ "rand_chacha 0.2.2",
+ "rayon",
+ "reed-solomon-erasure",
+ "rocksdb",
+ "rustc_version 0.4.0",
+ "serde",
+ "serde_bytes",
+ "sha2 0.10.6",
+ "solana-account-decoder 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-bpf-loader-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-entry 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-measure 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-metrics 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-perf 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-program-runtime 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-rayon-threadlimit 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-runtime 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-stake-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-storage-bigtable 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-storage-proto 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-transaction-status 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-vote-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "spl-token",
+ "spl-token-2022",
+ "static_assertions",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "trees",
 ]
 
 [[package]]
@@ -6140,23 +6532,23 @@ dependencies = [
  "serde",
  "serde_bytes",
  "sha2 0.10.6",
- "solana-account-decoder",
- "solana-bpf-loader-program",
- "solana-entry",
+ "solana-account-decoder 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-bpf-loader-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-entry 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-frozen-abi 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-frozen-abi-macro 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-measure",
- "solana-metrics",
- "solana-perf",
- "solana-program-runtime",
- "solana-rayon-threadlimit",
- "solana-runtime",
+ "solana-measure 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-metrics 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-perf 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-program-runtime 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rayon-threadlimit 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-runtime 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-stake-program",
- "solana-storage-bigtable",
- "solana-storage-proto",
- "solana-transaction-status",
- "solana-vote-program",
+ "solana-stake-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-storage-bigtable 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-storage-proto 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-transaction-status 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-vote-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "spl-token",
  "spl-token-2022",
  "static_assertions",
@@ -6191,10 +6583,31 @@ dependencies = [
 [[package]]
 name = "solana-measure"
 version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "52b03528be5a0fbbe4c06a4e1758d155363b51f7c782435b1eb1d4804ab124e3"
+dependencies = [
+ "log 0.4.17",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "solana-measure"
+version = "1.15.2"
 source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "log 0.4.17",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+]
+
+[[package]]
+name = "solana-merkle-tree"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7466b876e55c17ddb3359dd9ccf3bcd9fbe4e8858b26c4affe9a760fbce0ab34"
+dependencies = [
+ "fast-math",
+ "matches",
+ "solana-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -6205,6 +6618,20 @@ dependencies = [
  "fast-math",
  "matches",
  "solana-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+]
+
+[[package]]
+name = "solana-metrics"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc5ff9cbbe50e9918576ff46b4e38d9a946c33fc442982ce7ff397a3b851922a"
+dependencies = [
+ "crossbeam-channel",
+ "gethostname",
+ "lazy_static",
+ "log 0.4.17",
+ "reqwest",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -6223,6 +6650,28 @@ dependencies = [
 [[package]]
 name = "solana-net-utils"
 version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "26f35dff5b963ec471514e89bd99c7ac43545756221c99b63c2229cf5f37ebb2"
+dependencies = [
+ "bincode",
+ "clap 3.2.23",
+ "crossbeam-channel",
+ "log 0.4.17",
+ "nix",
+ "rand 0.7.3",
+ "serde",
+ "serde_derive",
+ "socket2",
+ "solana-logger 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-version 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tokio",
+ "url 2.3.1",
+]
+
+[[package]]
+name = "solana-net-utils"
+version = "1.15.2"
 source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "bincode",
@@ -6236,9 +6685,36 @@ dependencies = [
  "socket2",
  "solana-logger 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-version",
+ "solana-version 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "tokio",
  "url 2.3.1",
+]
+
+[[package]]
+name = "solana-perf"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33d630964a18fb466d79c3f5e191f37083b52b584a3f596e17f4bd41a145254d"
+dependencies = [
+ "ahash 0.7.6",
+ "bincode",
+ "bv",
+ "caps",
+ "curve25519-dalek",
+ "dlopen",
+ "dlopen_derive",
+ "fnv",
+ "lazy_static",
+ "libc",
+ "log 0.4.17",
+ "nix",
+ "rand 0.7.3",
+ "rayon",
+ "serde",
+ "solana-metrics 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-rayon-threadlimit 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-vote-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -6261,10 +6737,29 @@ dependencies = [
  "rand 0.7.3",
  "rayon",
  "serde",
- "solana-metrics",
- "solana-rayon-threadlimit",
+ "solana-metrics 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rayon-threadlimit 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-vote-program",
+ "solana-vote-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+]
+
+[[package]]
+name = "solana-poh"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "45548be47dab7dfbf6e549d16f2b23369db66f110474af1d97333b7de0012866"
+dependencies = [
+ "core_affinity",
+ "crossbeam-channel",
+ "log 0.4.17",
+ "solana-entry 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-ledger 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-measure 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-metrics 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-runtime 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sys-tuner 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror",
 ]
 
 [[package]]
@@ -6275,13 +6770,13 @@ dependencies = [
  "core_affinity",
  "crossbeam-channel",
  "log 0.4.17",
- "solana-entry",
- "solana-ledger",
- "solana-measure",
- "solana-metrics",
- "solana-runtime",
+ "solana-entry 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-ledger 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-measure 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-metrics 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-runtime 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-sys-tuner",
+ "solana-sys-tuner 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
 ]
 
@@ -6395,6 +6890,34 @@ dependencies = [
 [[package]]
 name = "solana-program-runtime"
 version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbb3250dc9a0abc87693437ae0bb3eb02603396dcf7698c06f77c33b2c0291ca"
+dependencies = [
+ "base64 0.13.1",
+ "bincode",
+ "eager",
+ "enum-iterator",
+ "itertools 0.10.5",
+ "libc",
+ "libloading",
+ "log 0.4.17",
+ "num-derive",
+ "num-traits",
+ "rand 0.7.3",
+ "rustc_version 0.4.0",
+ "serde",
+ "solana-frozen-abi 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-measure 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-metrics 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana_rbpf",
+ "thiserror",
+]
+
+[[package]]
+name = "solana-program-runtime"
+version = "1.15.2"
 source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "base64 0.13.1",
@@ -6412,11 +6935,36 @@ dependencies = [
  "serde",
  "solana-frozen-abi 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-frozen-abi-macro 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-measure",
- "solana-metrics",
+ "solana-measure 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-metrics 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana_rbpf",
  "thiserror",
+]
+
+[[package]]
+name = "solana-pubsub-client"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e441892b9a00fdceebb0e7eee3226f2f5985a15d081aab1924a298f24cdadb2"
+dependencies = [
+ "crossbeam-channel",
+ "futures-util",
+ "log 0.4.17",
+ "reqwest",
+ "semver 1.0.17",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "solana-account-decoder 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-rpc-client-api 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tokio-tungstenite",
+ "tungstenite",
+ "url 2.3.1",
 ]
 
 [[package]]
@@ -6432,8 +6980,8 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "solana-account-decoder",
- "solana-rpc-client-api",
+ "solana-account-decoder 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rpc-client-api 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
  "tokio",
@@ -6441,6 +6989,34 @@ dependencies = [
  "tokio-tungstenite",
  "tungstenite",
  "url 2.3.1",
+]
+
+[[package]]
+name = "solana-quic-client"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "99d19f3bd22bd8cef3bd7007e878f8ee1e9534a2b2ad99abc1ac05ed3d9f9bed"
+dependencies = [
+ "async-mutex",
+ "async-trait",
+ "futures 0.3.27",
+ "itertools 0.10.5",
+ "lazy_static",
+ "log 0.4.17",
+ "quinn",
+ "quinn-proto",
+ "quinn-udp",
+ "rustls 0.20.8",
+ "solana-connection-cache 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-measure 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-metrics 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-net-utils 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-rpc-client-api 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-streamer 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-tpu-client 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -6458,16 +7034,26 @@ dependencies = [
  "quinn-proto",
  "quinn-udp",
  "rustls 0.20.8",
- "solana-connection-cache",
- "solana-measure",
- "solana-metrics",
- "solana-net-utils",
- "solana-rpc-client-api",
+ "solana-connection-cache 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-measure 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-metrics 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-net-utils 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rpc-client-api 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-streamer",
- "solana-tpu-client",
+ "solana-streamer 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-tpu-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
  "tokio",
+]
+
+[[package]]
+name = "solana-rayon-threadlimit"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30893a53deeb0a3e32451f4f7cb063484e1504a06b127c4b40c223ea90093d7b"
+dependencies = [
+ "lazy_static",
+ "num_cpus",
 ]
 
 [[package]]
@@ -6477,6 +7063,25 @@ source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e992
 dependencies = [
  "lazy_static",
  "num_cpus",
+]
+
+[[package]]
+name = "solana-remote-wallet"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "970f142fbf6bda164847f60977ad56adde32cafb7c798d2e005110410754aa85"
+dependencies = [
+ "console",
+ "dialoguer",
+ "log 0.4.17",
+ "num-derive",
+ "num-traits",
+ "parking_lot 0.12.1",
+ "qstring",
+ "semver 1.0.17",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror",
+ "uriparse",
 ]
 
 [[package]]
@@ -6495,6 +7100,61 @@ dependencies = [
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
  "uriparse",
+]
+
+[[package]]
+name = "solana-rpc"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dbaccbc49d51f02e1ab0c05c84a64d77d301ccc81ef4f89b290996993b58b0c3"
+dependencies = [
+ "base64 0.13.1",
+ "bincode",
+ "bs58 0.4.0",
+ "crossbeam-channel",
+ "dashmap 4.0.2",
+ "itertools 0.10.5",
+ "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "jsonrpc-http-server",
+ "jsonrpc-pubsub 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc",
+ "log 0.4.17",
+ "rayon",
+ "regex",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "soketto",
+ "solana-account-decoder 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-client 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-entry 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-faucet 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-gossip 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-ledger 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-measure 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-metrics 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-perf 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-poh 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-rayon-threadlimit 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-rpc-client-api 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-runtime 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-send-transaction-service 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-stake-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-storage-bigtable 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-streamer 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-tpu-client 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-transaction-status 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-version 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-vote-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "spl-token",
+ "spl-token-2022",
+ "stream-cancel",
+ "thiserror",
+ "tokio",
+ "tokio-util 0.6.10",
 ]
 
 [[package]]
@@ -6521,34 +7181,60 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "soketto",
- "solana-account-decoder",
- "solana-client",
- "solana-entry",
- "solana-faucet",
- "solana-gossip",
- "solana-ledger",
- "solana-measure",
- "solana-metrics",
- "solana-perf",
- "solana-poh",
- "solana-rayon-threadlimit",
- "solana-rpc-client-api",
- "solana-runtime",
+ "solana-account-decoder 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-entry 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-faucet 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-gossip 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-ledger 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-measure 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-metrics 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-perf 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-poh 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rayon-threadlimit 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rpc-client-api 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-runtime 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-send-transaction-service",
- "solana-stake-program",
- "solana-storage-bigtable",
- "solana-streamer",
- "solana-tpu-client",
- "solana-transaction-status",
- "solana-version",
- "solana-vote-program",
+ "solana-send-transaction-service 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-stake-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-storage-bigtable 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-streamer 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-tpu-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-transaction-status 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-version 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-vote-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "spl-token",
  "spl-token-2022",
  "stream-cancel",
  "thiserror",
  "tokio",
  "tokio-util 0.6.10",
+]
+
+[[package]]
+name = "solana-rpc-client"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "075485c8ce9300df10b67f01bb9e9ecb79c4c96c58e4b8aacac20e63c6144149"
+dependencies = [
+ "async-trait",
+ "base64 0.13.1",
+ "bincode",
+ "bs58 0.4.0",
+ "indicatif",
+ "log 0.4.17",
+ "reqwest",
+ "semver 1.0.17",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "solana-account-decoder 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-rpc-client-api 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-transaction-status 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-version 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-vote-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tokio",
 ]
 
 [[package]]
@@ -6567,13 +7253,35 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "solana-account-decoder",
- "solana-rpc-client-api",
+ "solana-account-decoder 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rpc-client-api 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-transaction-status",
- "solana-version",
- "solana-vote-program",
+ "solana-transaction-status 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-version 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-vote-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "tokio",
+]
+
+[[package]]
+name = "solana-rpc-client-api"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0623112b87c9e65ef00538e27203b6129518d40376a4aa2ddc4fae5bf78a8a2c"
+dependencies = [
+ "base64 0.13.1",
+ "bs58 0.4.0",
+ "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "reqwest",
+ "semver 1.0.17",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "solana-account-decoder 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-transaction-status 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-version 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "spl-token-2022",
+ "thiserror",
 ]
 
 [[package]]
@@ -6589,11 +7297,24 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "solana-account-decoder",
+ "solana-account-decoder 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-transaction-status",
- "solana-version",
+ "solana-transaction-status 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-version 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "spl-token-2022",
+ "thiserror",
+]
+
+[[package]]
+name = "solana-rpc-client-nonce-utils"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a70673c11ff5d831c4e569b41aeb86c0e9c68dba79515b7c6f42b8f842be76fe"
+dependencies = [
+ "clap 2.34.0",
+ "solana-clap-utils 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-rpc-client 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror",
 ]
 
@@ -6603,10 +7324,73 @@ version = "1.15.2"
 source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "clap 2.34.0",
- "solana-clap-utils",
- "solana-rpc-client",
+ "solana-clap-utils 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rpc-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
+]
+
+[[package]]
+name = "solana-runtime"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8f2a24d899d5c2a339ed0887b0ef321d9ffb22849923dbedcdc23dba32682ec4"
+dependencies = [
+ "arrayref",
+ "bincode",
+ "blake3",
+ "bv",
+ "bytemuck",
+ "byteorder",
+ "bzip2",
+ "crossbeam-channel",
+ "dashmap 4.0.2",
+ "dir-diff",
+ "flate2 1.0.25",
+ "fnv",
+ "im",
+ "index_list",
+ "itertools 0.10.5",
+ "lazy_static",
+ "log 0.4.17",
+ "lru",
+ "lz4",
+ "memmap2",
+ "num-derive",
+ "num-traits",
+ "num_cpus",
+ "once_cell",
+ "ouroboros",
+ "rand 0.7.3",
+ "rayon",
+ "regex",
+ "rustc_version 0.4.0",
+ "serde",
+ "serde_derive",
+ "solana-address-lookup-table-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-bpf-loader-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-bucket-map 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-compute-budget-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-config-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-measure 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-metrics 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-perf 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-program-runtime 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-rayon-threadlimit 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-stake-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-vote-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-zk-token-proof-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-zk-token-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "strum",
+ "strum_macros",
+ "symlink",
+ "tar",
+ "tempfile",
+ "thiserror",
+ "zstd",
 ]
 
 [[package]]
@@ -6645,22 +7429,22 @@ dependencies = [
  "rustc_version 0.4.0",
  "serde",
  "serde_derive",
- "solana-address-lookup-table-program",
- "solana-bpf-loader-program",
- "solana-bucket-map",
- "solana-compute-budget-program",
- "solana-config-program",
+ "solana-address-lookup-table-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-bpf-loader-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-bucket-map 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-compute-budget-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-config-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-frozen-abi 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-frozen-abi-macro 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-measure",
- "solana-metrics",
- "solana-perf",
- "solana-program-runtime",
- "solana-rayon-threadlimit",
+ "solana-measure 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-metrics 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-perf 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-program-runtime 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rayon-threadlimit 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-stake-program",
- "solana-vote-program",
- "solana-zk-token-proof-program",
+ "solana-stake-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-vote-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-zk-token-proof-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-zk-token-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "strum",
  "strum_macros",
@@ -6804,16 +7588,47 @@ dependencies = [
 [[package]]
 name = "solana-send-transaction-service"
 version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1a9997fdab12ca016e2d44ba83ac4d1624a7883a9b123e085a2cd3ea13ce9d68"
+dependencies = [
+ "crossbeam-channel",
+ "log 0.4.17",
+ "solana-client 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-measure 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-metrics 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-runtime 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-tpu-client 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "solana-send-transaction-service"
+version = "1.15.2"
 source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "crossbeam-channel",
  "log 0.4.17",
- "solana-client",
- "solana-measure",
- "solana-metrics",
- "solana-runtime",
+ "solana-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-measure 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-metrics 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-runtime 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-tpu-client",
+ "solana-tpu-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+]
+
+[[package]]
+name = "solana-stake-program"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eace3b30e9b6a58864c6ffe76726880a60e1feddefdfe0cbaffbddedf7a90d30"
+dependencies = [
+ "bincode",
+ "log 0.4.17",
+ "rustc_version 0.4.0",
+ "solana-config-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-program-runtime 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-vote-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -6824,10 +7639,44 @@ dependencies = [
  "bincode",
  "log 0.4.17",
  "rustc_version 0.4.0",
- "solana-config-program",
- "solana-program-runtime",
+ "solana-config-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-program-runtime 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-vote-program",
+ "solana-vote-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+]
+
+[[package]]
+name = "solana-storage-bigtable"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "37be265389aa18237e2589ad9051144cd923c3cd2ea16f39ef34057aea61cb1a"
+dependencies = [
+ "backoff",
+ "bincode",
+ "bytes 1.4.0",
+ "bzip2",
+ "enum-iterator",
+ "flate2 1.0.25",
+ "futures 0.3.27",
+ "goauth",
+ "http",
+ "hyper 0.14.25",
+ "hyper-proxy",
+ "log 0.4.17",
+ "openssl",
+ "prost 0.11.8",
+ "prost-types 0.11.8",
+ "serde",
+ "serde_derive",
+ "smpl_jwt",
+ "solana-metrics 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-storage-proto 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-transaction-status 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror",
+ "tokio",
+ "tonic 0.8.3",
+ "zstd",
 ]
 
 [[package]]
@@ -6853,14 +7702,31 @@ dependencies = [
  "serde",
  "serde_derive",
  "smpl_jwt",
- "solana-metrics",
+ "solana-metrics 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-storage-proto",
- "solana-transaction-status",
+ "solana-storage-proto 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-transaction-status 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
  "tokio",
  "tonic 0.8.3",
  "zstd",
+]
+
+[[package]]
+name = "solana-storage-proto"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "764664a1fce92fbcc6ba0b593f0c11e1d5ca961fcaa16d0f10e9fe85a4d88c4f"
+dependencies = [
+ "bincode",
+ "bs58 0.4.0",
+ "prost 0.11.8",
+ "protobuf-src",
+ "serde",
+ "solana-account-decoder 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-transaction-status 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tonic-build 0.8.4",
 ]
 
 [[package]]
@@ -6873,10 +7739,41 @@ dependencies = [
  "prost 0.11.8",
  "protobuf-src",
  "serde",
- "solana-account-decoder",
+ "solana-account-decoder 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-transaction-status",
+ "solana-transaction-status 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "tonic-build 0.8.4",
+]
+
+[[package]]
+name = "solana-streamer"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ddd5b3dad02879b083b7218b9f9596d97cee8deda2b625bff67db95d8920f5f7"
+dependencies = [
+ "crossbeam-channel",
+ "futures-util",
+ "histogram",
+ "indexmap",
+ "itertools 0.10.5",
+ "libc",
+ "log 0.4.17",
+ "nix",
+ "pem",
+ "percentage",
+ "pkcs8",
+ "quinn",
+ "quinn-proto",
+ "quinn-udp",
+ "rand 0.7.3",
+ "rcgen",
+ "rustls 0.20.8",
+ "solana-metrics 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-perf 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror",
+ "tokio",
+ "x509-parser",
 ]
 
 [[package]]
@@ -6901,12 +7798,29 @@ dependencies = [
  "rand 0.7.3",
  "rcgen",
  "rustls 0.20.8",
- "solana-metrics",
- "solana-perf",
+ "solana-metrics 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-perf 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
  "tokio",
  "x509-parser",
+]
+
+[[package]]
+name = "solana-sys-tuner"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9dfa7798c748c73a9e68c28ade656698ab6fff82fe5e3ad867b3e1c6c49bf9ec"
+dependencies = [
+ "clap 2.34.0",
+ "libc",
+ "log 0.4.17",
+ "nix",
+ "solana-logger 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-version 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sysctl",
+ "unix_socket2",
+ "users",
 ]
 
 [[package]]
@@ -6919,10 +7833,26 @@ dependencies = [
  "log 0.4.17",
  "nix",
  "solana-logger 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-version",
+ "solana-version 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "sysctl",
  "unix_socket2",
  "users",
+]
+
+[[package]]
+name = "solana-thin-client"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b16bdd6347caf841a007952c748cd35c3ec8395aa3816ac59b4a9b4c102237de"
+dependencies = [
+ "bincode",
+ "log 0.4.17",
+ "rayon",
+ "solana-connection-cache 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-rpc-client 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-rpc-client-api 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-tpu-client 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -6933,11 +7863,37 @@ dependencies = [
  "bincode",
  "log 0.4.17",
  "rayon",
- "solana-connection-cache",
- "solana-rpc-client",
- "solana-rpc-client-api",
+ "solana-connection-cache 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rpc-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rpc-client-api 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-tpu-client",
+ "solana-tpu-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+]
+
+[[package]]
+name = "solana-tpu-client"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "50a7dfa7a85ba000656d91c8847b61f8fa9b8067443449fab8e4c35fe01dee5c"
+dependencies = [
+ "async-trait",
+ "bincode",
+ "futures-util",
+ "indexmap",
+ "indicatif",
+ "log 0.4.17",
+ "rand 0.7.3",
+ "rayon",
+ "solana-connection-cache 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-measure 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-metrics 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-net-utils 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-pubsub-client 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-rpc-client 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-rpc-client-api 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -6953,16 +7909,42 @@ dependencies = [
  "log 0.4.17",
  "rand 0.7.3",
  "rayon",
- "solana-connection-cache",
- "solana-measure",
- "solana-metrics",
- "solana-net-utils",
- "solana-pubsub-client",
- "solana-rpc-client",
- "solana-rpc-client-api",
+ "solana-connection-cache 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-measure 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-metrics 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-net-utils 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-pubsub-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rpc-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-rpc-client-api 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
  "tokio",
+]
+
+[[package]]
+name = "solana-transaction-status"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b803e356fc2de0074866a6da007e721c950e754747e761a263b7f9e4c17edefa"
+dependencies = [
+ "Inflector",
+ "base64 0.13.1",
+ "bincode",
+ "borsh 0.9.3",
+ "bs58 0.4.0",
+ "lazy_static",
+ "log 0.4.17",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "solana-account-decoder 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-address-lookup-table-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "spl-associated-token-account",
+ "spl-memo",
+ "spl-token",
+ "spl-token-2022",
+ "thiserror",
 ]
 
 [[package]]
@@ -6980,8 +7962,8 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "solana-account-decoder",
- "solana-address-lookup-table-program",
+ "solana-account-decoder 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-address-lookup-table-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "spl-associated-token-account",
  "spl-memo",
@@ -6993,16 +7975,48 @@ dependencies = [
 [[package]]
 name = "solana-udp-client"
 version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1b0d7efeb2cb7dafbf3b085c895e440b8947fe5def6bdad17ebae9badfdecb0"
+dependencies = [
+ "async-trait",
+ "solana-connection-cache 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-net-utils 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-streamer 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-tpu-client 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "solana-udp-client"
+version = "1.15.2"
 source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "async-trait",
- "solana-connection-cache",
- "solana-net-utils",
+ "solana-connection-cache 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-net-utils 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-streamer",
- "solana-tpu-client",
+ "solana-streamer 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
+ "solana-tpu-client 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
  "tokio",
+]
+
+[[package]]
+name = "solana-version"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c3df7b4a4dc0a39da78d790845089a8d112fcd6d2d003ae93830387a564cfc5"
+dependencies = [
+ "log 0.4.17",
+ "rustc_version 0.4.0",
+ "semver 1.0.17",
+ "serde",
+ "serde_derive",
+ "solana-frozen-abi 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -7023,6 +8037,28 @@ dependencies = [
 [[package]]
 name = "solana-vote-program"
 version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2439b8c68f000f8c3713eceabb5cabc8528d276e5bc971c694d4103d4be958ff"
+dependencies = [
+ "bincode",
+ "log 0.4.17",
+ "num-derive",
+ "num-traits",
+ "rustc_version 0.4.0",
+ "serde",
+ "serde_derive",
+ "solana-frozen-abi 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-metrics 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-program 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-program-runtime 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror",
+]
+
+[[package]]
+name = "solana-vote-program"
+version = "1.15.2"
 source = "git+https://github.com/solana-labs/solana.git?tag=v1.15.2#dea65f48e9920a71edd7c12c305c5ebadd192afa"
 dependencies = [
  "bincode",
@@ -7034,11 +8070,26 @@ dependencies = [
  "serde_derive",
  "solana-frozen-abi 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-frozen-abi-macro 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-metrics",
+ "solana-metrics 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-program 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
- "solana-program-runtime",
+ "solana-program-runtime 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "thiserror",
+]
+
+[[package]]
+name = "solana-zk-token-proof-program"
+version = "1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ed4b22ad82dee705d0eec53283b4b6871a7b7b5231f023c18bf103f0cb62bc3"
+dependencies = [
+ "bytemuck",
+ "getrandom 0.1.16",
+ "num-derive",
+ "num-traits",
+ "solana-program-runtime 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-zk-token-sdk 1.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -7050,7 +8101,7 @@ dependencies = [
  "getrandom 0.1.16",
  "num-derive",
  "num-traits",
- "solana-program-runtime",
+ "solana-program-runtime 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
  "solana-zk-token-sdk 1.15.2 (git+https://github.com/solana-labs/solana.git?tag=v1.15.2)",
 ]
