@@ -29,6 +29,7 @@ dashmap = "5.4.0"
 
 mango = { git = "https://github.com/blockworks-foundation/mango-v3.git", tag = "v3.6.0", default-features = false }
 mango-common = { git = "https://github.com/blockworks-foundation/mango-v3.git", tag = "v3.6.0" }
+mango-feeds-connector = { git = "https://github.com/blockworks-foundation/mango-feeds.git", branch = "ckamm/solana-versions2", default-features = false, features = ["solana-1-15"] }
 yellowstone-grpc-proto = "1.0.1"
 
 solana-client = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.2" }

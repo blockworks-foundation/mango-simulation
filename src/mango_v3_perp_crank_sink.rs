@@ -8,14 +8,17 @@ use mango::{
     instruction::consume_events,
     queue::{AnyEvent, EventQueueHeader, EventType, FillEvent, OutEvent, Queue},
 };
-use solana_sdk::account::ReadableAccount;
+use mango_feeds_connector::solana_sdk::account::ReadableAccount;
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 
 use bytemuck::cast_ref;
 
-use crate::{
+use mango_feeds_connector::{
     account_write_filter::AccountWriteSink,
     chain_data::AccountData,
+};
+
+use crate::{
     helpers::{to_sdk_instruction, to_sp_pk},
 };
 
@@ -58,7 +61,7 @@ type EventQueueEvents = [AnyEvent; QUEUE_LEN];
 
 #[async_trait]
 impl AccountWriteSink for MangoV3PerpCrankSink {
-    async fn process(&self, pk: &Pubkey, account: &AccountData) -> Result<(), String> {
+    async fn process(&self, pk: &mango_feeds_connector::solana_sdk::pubkey::Pubkey, account: &AccountData) -> Result<(), String> {
         let account = &account.account;
 
         let (ix, mkt_pk): (Result<Instruction, String>, Pubkey) = {
@@ -109,9 +112,11 @@ impl AccountWriteSink for MangoV3PerpCrankSink {
                 )
                 .collect();
 
+
+            let pk = solana_sdk::pubkey::Pubkey::new_from_array(pk.to_bytes());
             let mkt_pk = self
                 .mkt_pks_by_evq_pks
-                .get(pk)
+                .get(&pk)
                 .expect(&format!("{pk:?} is a known public key"));
 
             let ix = to_sdk_instruction(
@@ -120,7 +125,7 @@ impl AccountWriteSink for MangoV3PerpCrankSink {
                     &to_sp_pk(&self.group_pk),
                     &to_sp_pk(&self.cache_pk),
                     &to_sp_pk(mkt_pk),
-                    &to_sp_pk(pk),
+    &to_sp_pk(&pk),
                     &mut mango_accounts,
                     MAX_EVENTS_PER_TX,
                 )

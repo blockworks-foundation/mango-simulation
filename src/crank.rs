@@ -1,14 +1,19 @@
 use crate::{
-    account_write_filter::{self, AccountWriteRoute},
-    grpc_plugin_source::FilterConfig,
     helpers::to_sp_pk,
     mango::GroupConfig,
     mango_v3_perp_crank_sink::MangoV3PerpCrankSink,
-    metrics,
     states::{KeeperInstruction, TransactionSendRecord},
     tpu_manager::TpuManager,
-    websocket_source::{self, KeeperConfig},
 };
+
+use mango_feeds_connector::{
+    account_write_filter::{self, AccountWriteRoute},
+    FilterConfig,
+    websocket_source,
+    metrics, SourceConfig,
+    SnapshotSourceConfig, MetricsConfig,
+};
+
 use async_channel::unbounded;
 use chrono::Utc;
 use log::*;
@@ -25,6 +30,16 @@ use std::{
     time::Duration,
 };
 use tokio::sync::RwLock;
+
+
+
+#[derive(Debug, Clone)]
+pub struct KeeperConfig {
+    pub program_id: Pubkey,
+    pub rpc_url: String,
+    pub websocket_url: String,
+}
+
 
 pub fn start(
     config: KeeperConfig,
@@ -49,7 +64,7 @@ pub fn start(
     let group_pk = Pubkey::from_str(&group.public_key).unwrap();
     let cache_pk = Pubkey::from_str(&group.cache_key).unwrap();
     let mango_program_id = Pubkey::from_str(&group.mango_program_id).unwrap();
-    let filter_config = FilterConfig {
+    let _filter_config = FilterConfig {
         program_ids: vec![group.mango_program_id.clone()],
         account_ids: group
             .perp_markets
@@ -98,7 +113,7 @@ pub fn start(
 
     tokio::spawn(async move {
         let metrics_tx = metrics::start(
-            metrics::MetricsConfig {
+            MetricsConfig {
                 output_stdout: true,
                 output_http: false,
             },
@@ -108,7 +123,7 @@ pub fn start(
         let routes = vec![AccountWriteRoute {
             matched_pubkeys: perp_queue_pks
                 .iter()
-                .map(|(_, evq_pk)| evq_pk.clone())
+                .map(|(_, evq_pk)| mango_feeds_connector::solana_sdk::pubkey::Pubkey::new_from_array(evq_pk.to_bytes()))
                 .collect(),
             sink: Arc::new(MangoV3PerpCrankSink::new(
                 perp_queue_pks,
@@ -134,8 +149,15 @@ pub fn start(
         // ).await;
 
         websocket_source::process_events(
-            config,
-            &filter_config,
+            &SourceConfig {
+                dedup_queue_size: 0,
+                grpc_sources: vec![],
+                snapshot: SnapshotSourceConfig {
+                    rpc_http_url: config.rpc_url,
+                    program_id: config.program_id.to_string(),
+                },
+                rpc_ws_url: config.websocket_url,
+            },
             account_write_queue_sender,
             slot_queue_sender,
         )
