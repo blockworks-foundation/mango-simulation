@@ -8,29 +8,32 @@ license = "Apache-2.0"
 homepage = "mango.markets"
 publish = false
 
-rust-version = "1.66.1"
-
 [dependencies]
+anyhow = "1.0"
+arrayref = "*"
+async-std = "1.12.0"
+async-channel = "1.6"
+async-trait = "0.1.66"
 borsh = "0.9.3"
+bytemuck = "1.7.2"
 chrono = "0.4.19"
 clap = "2.33.1"
+csv-async = "1.2"
+dashmap = "5.4.0"
 fixed = { version = ">=1.11.0, <1.12.0", features = ["serde"] }
 fixed-macro = "^1.1.1"
-multiqueue = "^0.3.2"
+futures = "0.3.17"
+iter_tools = "0.1.4"
 log = "0.4.14"
+multiqueue = "^0.3.2"
 rand = ">=0.8.5"
 rayon = "1.5.1"
 serde = "1.0.136"
 serde_derive = "1.0.103"
 serde_json = "1.0.79"
 serde_yaml = "0.8.23"
-iter_tools = "0.1.4"
-dashmap = "5.4.0"
-
-mango = { git = "https://github.com/blockworks-foundation/mango-v3.git", tag = "v3.6.0", default-features = false }
-mango-common = { git = "https://github.com/blockworks-foundation/mango-v3.git", tag = "v3.6.0" }
-mango-feeds-connector = { git = "https://github.com/blockworks-foundation/mango-feeds.git", branch = "ckamm/solana-versions2", default-features = false, features = ["solana-1-15"] }
-yellowstone-grpc-proto = "1.0.1"
+thiserror = "1.0"
+tokio = { version = "1", features = ["full"] }
 
 solana-client = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.2" }
 solana-core = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.2" }
@@ -52,25 +55,10 @@ solana-account-decoder = { git = "https://github.com/solana-labs/solana.git", ta
 # we have a bunch of helpers to convert between the two explicitly
 solana-program = "1.9.17"
 
-thiserror = "1.0"
-csv-async = "1.2"
-async-std = "1.12.0"
-tokio = { version = "1", features = ["full"] }
-anyhow = "1.0"
-async-channel = "1.6"
-async-trait = "0.1.66"
-prost = "0.11"
-warp = "0.3"
-futures = "0.3.17"
-jsonrpc-core = "18.0.0"
-jsonrpc-core-client = { version = "18.0.0",  features = ["ws", "http"] }
-arrayref = "*"
-bytemuck = "1.7.2"
-toml = "*"
+mango = { git = "https://github.com/blockworks-foundation/mango-v3.git", tag = "v3.6.0", default-features = false }
+mango-common = { git = "https://github.com/blockworks-foundation/mango-v3.git", tag = "v3.6.0" }
+mango-feeds-connector = { git = "https://github.com/blockworks-foundation/mango-feeds.git", branch = "ckamm/solana-versions2", default-features = false, features = ["solana-1-15"] }
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
-[patch.crates-io]
-# for gzip encoded responses
-jsonrpc-core-client = { git = "https://github.com/ckamm/jsonrpc.git", branch = "ckamm/http-with-gzip" }
