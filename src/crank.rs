@@ -8,10 +8,7 @@ use crate::{
 
 use mango_feeds_connector::{
     account_write_filter::{self, AccountWriteRoute},
-    FilterConfig,
-    websocket_source,
-    metrics, SourceConfig,
-    SnapshotSourceConfig, MetricsConfig,
+    metrics, websocket_source, FilterConfig, MetricsConfig, SnapshotSourceConfig, SourceConfig,
 };
 
 use async_channel::unbounded;
@@ -31,15 +28,12 @@ use std::{
 };
 use tokio::sync::RwLock;
 
-
-
 #[derive(Debug, Clone)]
 pub struct KeeperConfig {
     pub program_id: Pubkey,
     pub rpc_url: String,
     pub websocket_url: String,
 }
-
 
 pub fn start(
     config: KeeperConfig,
@@ -123,7 +117,11 @@ pub fn start(
         let routes = vec![AccountWriteRoute {
             matched_pubkeys: perp_queue_pks
                 .iter()
-                .map(|(_, evq_pk)| mango_feeds_connector::solana_sdk::pubkey::Pubkey::new_from_array(evq_pk.to_bytes()))
+                .map(|(_, evq_pk)| {
+                    mango_feeds_connector::solana_sdk::pubkey::Pubkey::new_from_array(
+                        evq_pk.to_bytes(),
+                    )
+                })
                 .collect(),
             sink: Arc::new(MangoV3PerpCrankSink::new(
                 perp_queue_pks,
@@ -150,8 +148,10 @@ pub fn start(
         //     metrics_tx.clone(),
         // ).await;
 
-        info!("start processing websocket events program_id={:?} ws_url={:?}", config.program_id, config.websocket_url);
-
+        info!(
+            "start processing websocket events program_id={:?} ws_url={:?}",
+            config.program_id, config.websocket_url
+        );
 
         websocket_source::process_events(
             &SourceConfig {

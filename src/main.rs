@@ -1,6 +1,5 @@
 use {
     log::info,
-    serde_json,
     mango_simulation::{
         cli,
         confirmation_strategies::confirmations_by_blocks,
@@ -17,6 +16,7 @@ use {
         stats::MangoSimulationStats,
         tpu_manager::TpuManager,
     },
+    serde_json,
     solana_client::{nonblocking::rpc_client::RpcClient as NbRpcClient, rpc_client::RpcClient},
     solana_program::pubkey::Pubkey,
     solana_sdk::{commitment_config::CommitmentConfig, signer::keypair::Keypair},
@@ -215,8 +215,7 @@ pub async fn main() -> anyhow::Result<()> {
     );
     tasks.append(&mut writers_jh);
 
-    let stats_handle =
-        mango_sim_stats.update_from_tx_status_stream(tx_status_sx.subscribe());
+    let stats_handle = mango_sim_stats.update_from_tx_status_stream(tx_status_sx.subscribe());
     tasks.push(stats_handle);
 
     let mut confirmation_threads = confirmations_by_blocks(
