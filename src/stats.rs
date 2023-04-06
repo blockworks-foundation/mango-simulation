@@ -1,6 +1,6 @@
 use std::{
     sync::{
-        atomic::{AtomicBool, AtomicU64, Ordering},
+        atomic::{AtomicU64, Ordering},
         Arc,
     },
     time::Instant,
@@ -63,16 +63,11 @@ impl MangoSimulationStats {
     pub fn update_from_tx_status_stream(
         &self,
         tx_confirm_record_reciever: tokio::sync::broadcast::Receiver<TransactionConfirmRecord>,
-        do_exit: Arc<AtomicBool>,
     ) -> JoinHandle<()> {
         let counters = self.counters.clone();
         tokio::spawn(async move {
             let mut tx_confirm_record_reciever = tx_confirm_record_reciever;
             loop {
-                if do_exit.load(Ordering::Relaxed) {
-                    break;
-                }
-
                 if let Ok(tx_data) = tx_confirm_record_reciever.recv().await {
                     if let Some(_) = tx_data.confirmed_at {
                         counters.num_confirmed_txs.fetch_add(1, Ordering::Relaxed);
@@ -307,17 +302,53 @@ impl MangoSimulationStats {
                 f64
             ),
             ("keeper_consume_events_sent", num_consume_events_txs, i64),
-            ("keeper_consume_events_success", succ_consume_events_txs, i64),
+            (
+                "keeper_consume_events_success",
+                succ_consume_events_txs,
+                i64
+            ),
             ("keeper_cache_price_sent", num_cache_price_txs, i64),
             ("keeper_cache_price_success", succ_cache_price_txs, i64),
-            ("keeper_update_and_cache_qb_sent", num_update_and_cache_quote_bank_txs, i64),
-            ("keeper_update_and_cache_qb_succ", succ_update_and_cache_quote_bank_txs, i64),
-            ("keeper_update_root_banks_sent", num_update_root_banks_txs, i64),
-            ("keeper_update_root_banks_succ", succ_update_root_banks_txs, i64),
-            ("keeper_cache_root_banks_sent", num_cache_root_banks_txs, i64),
-            ("keeper_cache_root_banks_succ", succ_cache_root_banks_txs, i64),
-            ("keeper_update_perp_cache_sent", num_update_perp_cache_txs, i64),
-            ("keeper_update_perp_cache_succ", succ_update_perp_cache_txs, i64),
+            (
+                "keeper_update_and_cache_qb_sent",
+                num_update_and_cache_quote_bank_txs,
+                i64
+            ),
+            (
+                "keeper_update_and_cache_qb_succ",
+                succ_update_and_cache_quote_bank_txs,
+                i64
+            ),
+            (
+                "keeper_update_root_banks_sent",
+                num_update_root_banks_txs,
+                i64
+            ),
+            (
+                "keeper_update_root_banks_succ",
+                succ_update_root_banks_txs,
+                i64
+            ),
+            (
+                "keeper_cache_root_banks_sent",
+                num_cache_root_banks_txs,
+                i64
+            ),
+            (
+                "keeper_cache_root_banks_succ",
+                succ_cache_root_banks_txs,
+                i64
+            ),
+            (
+                "keeper_update_perp_cache_sent",
+                num_update_perp_cache_txs,
+                i64
+            ),
+            (
+                "keeper_update_perp_cache_succ",
+                succ_update_perp_cache_txs,
+                i64
+            ),
             ("keeper_update_funding_sent", num_update_funding_txs, i64),
             ("keeper_update_funding_succ", succ_update_funding_txs, i64),
         );

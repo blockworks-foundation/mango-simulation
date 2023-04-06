@@ -20,7 +20,9 @@ use solana_transaction_status::{
 
 use crate::states::{BlockData, TransactionConfirmRecord, TransactionSendRecord};
 
-use tokio::{sync::mpsc::UnboundedReceiver, task::JoinHandle, time::Instant, sync::broadcast::Sender};
+use tokio::{
+    sync::broadcast::Sender, sync::mpsc::UnboundedReceiver, task::JoinHandle, time::Instant,
+};
 
 pub async fn process_blocks(
     block: &UiConfirmedBlock,
@@ -73,33 +75,31 @@ pub async fn process_blocks(
                     let transaction_record = transaction_record.0;
                     mm_transaction_count += 1;
 
-                    match tx_confirm_records
-                        .send(TransactionConfirmRecord {
-                            signature: transaction_record.signature.to_string(),
-                            confirmed_slot: Some(slot),
-                            confirmed_at: Some(Utc::now().to_string()),
-                            sent_at: transaction_record.sent_at.to_string(),
-                            sent_slot: transaction_record.sent_slot,
-                            successful: if let Some(meta) = &meta {
-                                meta.status.is_ok()
-                            } else {
-                                false
-                            },
-                            error: if let Some(meta) = &meta {
-                                meta.err.as_ref().map(|x| x.to_string())
-                            } else {
-                                None
-                            },
-                            block_hash: Some(block.blockhash.clone()),
-                            market: transaction_record.market.map(|x| x.to_string()),
-                            market_maker: transaction_record.market_maker.map(|x| x.to_string()),
-                            keeper_instruction: transaction_record.keeper_instruction,
-                            slot_processed: Some(slot),
-                            slot_leader: Some(slot_leader.clone()),
-                            timed_out: false,
-                            priority_fees: transaction_record.priority_fees,
-                        })
-                    {
+                    match tx_confirm_records.send(TransactionConfirmRecord {
+                        signature: transaction_record.signature.to_string(),
+                        confirmed_slot: Some(slot),
+                        confirmed_at: Some(Utc::now().to_string()),
+                        sent_at: transaction_record.sent_at.to_string(),
+                        sent_slot: transaction_record.sent_slot,
+                        successful: if let Some(meta) = &meta {
+                            meta.status.is_ok()
+                        } else {
+                            false
+                        },
+                        error: if let Some(meta) = &meta {
+                            meta.err.as_ref().map(|x| x.to_string())
+                        } else {
+                            None
+                        },
+                        block_hash: Some(block.blockhash.clone()),
+                        market: transaction_record.market.map(|x| x.to_string()),
+                        market_maker: transaction_record.market_maker.map(|x| x.to_string()),
+                        keeper_instruction: transaction_record.keeper_instruction,
+                        slot_processed: Some(slot),
+                        slot_leader: Some(slot_leader.clone()),
+                        timed_out: false,
+                        priority_fees: transaction_record.priority_fees,
+                    }) {
                         Ok(_) => {}
                         Err(e) => {
                             warn!("Tx confirm record channel broken {}", e.to_string());
@@ -191,24 +191,23 @@ pub fn confirmations_by_blocks(
 
                         // add to timeout if not retaining
                         if remove {
-                            let _ = tx_confirm_records
-                                .send(TransactionConfirmRecord {
-                                    signature: signature.to_string(),
-                                    confirmed_slot: None,
-                                    confirmed_at: None,
-                                    sent_at: sent_record.sent_at.to_string(),
-                                    sent_slot: sent_record.sent_slot,
-                                    successful: false,
-                                    error: Some("timeout".to_string()),
-                                    block_hash: None,
-                                    market: sent_record.market.map(|x| x.to_string()),
-                                    market_maker: sent_record.market_maker.map(|x| x.to_string()),
-                                    keeper_instruction: sent_record.keeper_instruction.clone(),
-                                    slot_processed: None,
-                                    slot_leader: None,
-                                    timed_out: true,
-                                    priority_fees: sent_record.priority_fees,
-                                });
+                            let _ = tx_confirm_records.send(TransactionConfirmRecord {
+                                signature: signature.to_string(),
+                                confirmed_slot: None,
+                                confirmed_at: None,
+                                sent_at: sent_record.sent_at.to_string(),
+                                sent_slot: sent_record.sent_slot,
+                                successful: false,
+                                error: Some("timeout".to_string()),
+                                block_hash: None,
+                                market: sent_record.market.map(|x| x.to_string()),
+                                market_maker: sent_record.market_maker.map(|x| x.to_string()),
+                                keeper_instruction: sent_record.keeper_instruction.clone(),
+                                slot_processed: None,
+                                slot_leader: None,
+                                timed_out: true,
+                                priority_fees: sent_record.priority_fees,
+                            });
                             to_remove.push(signature.clone());
                         }
                     }

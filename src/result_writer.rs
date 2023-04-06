@@ -1,6 +1,6 @@
-use tokio::{task::JoinHandle, sync::broadcast::Receiver};
-use async_std::fs::File;
 use crate::states::{BlockData, TransactionConfirmRecord};
+use async_std::fs::File;
+use tokio::{sync::broadcast::Receiver, task::JoinHandle};
 
 pub fn initialize_result_writers(
     transaction_save_file: String,
@@ -13,7 +13,7 @@ pub fn initialize_result_writers(
     if !transaction_save_file.is_empty() {
         let tx_data_jh = tokio::spawn(async move {
             let mut writer = csv_async::AsyncSerializer::from_writer(
-                File::create(transaction_save_file).await.unwrap()
+                File::create(transaction_save_file).await.unwrap(),
             );
             let mut tx_data = tx_data;
             loop {
@@ -31,7 +31,7 @@ pub fn initialize_result_writers(
     if !block_data_save_file.is_empty() {
         let block_data_jh = tokio::spawn(async move {
             let mut writer = csv_async::AsyncSerializer::from_writer(
-                File::create(block_data_save_file).await.unwrap()
+                File::create(block_data_save_file).await.unwrap(),
             );
             let mut block_data = block_data;
             loop {
