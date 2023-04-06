@@ -29,8 +29,8 @@ impl Default for Config {
     fn default() -> Config {
         Config {
             entrypoint_addr: SocketAddr::from(([127, 0, 0, 1], 8001)),
-            json_rpc_url: ConfigInput::default().json_rpc_url,
-            websocket_url: ConfigInput::default().websocket_url,
+            json_rpc_url: "http://127.0.0.1:8899".to_string(),
+            websocket_url: "ws://127.0.0.1:8900".to_string(),
             id: Keypair::new(),
             duration: Duration::new(std::u64::MAX, 0),
             quotes_per_second: 1,

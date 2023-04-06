@@ -135,10 +135,12 @@ pub fn start(
             timeout_interval: Duration::default(),
         }];
 
+        info!("matched_pks={:?}", routes[0].matched_pubkeys);
+
         let (account_write_queue_sender, slot_queue_sender) =
             account_write_filter::init(routes, metrics_tx.clone()).expect("filter initializes");
 
-        info!("start processing grpc events");
+        // info!("start processing grpc events");
 
         // grpc_plugin_source::process_events(
         //     &config,
@@ -147,6 +149,9 @@ pub fn start(
         //     slot_queue_sender,
         //     metrics_tx.clone(),
         // ).await;
+
+        info!("start processing websocket events program_id={:?} ws_url={:?}", config.program_id, config.websocket_url);
+
 
         websocket_source::process_events(
             &SourceConfig {

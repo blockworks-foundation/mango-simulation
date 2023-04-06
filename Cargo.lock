@@ -3289,7 +3289,7 @@ dependencies = [
 [[package]]
 name = "mango-feeds-connector"
 version = "0.1.0"
-source = "git+https://github.com/blockworks-foundation/mango-feeds.git?branch=ckamm/solana-versions2#002fbcc353f31d07861b9580fa83d126681fbd42"
+source = "git+https://github.com/blockworks-foundation/mango-feeds.git?branch=ckamm/solana-versions2#b58da84674106072f79beb61c9e1e73d16ad902a"
 dependencies = [
  "anyhow",
  "async-channel",
