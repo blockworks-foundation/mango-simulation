@@ -18,8 +18,9 @@ cd configure_mango
 yarn install
 sh scripts/configure_local.sh
 
-# open a new terminal as the previous one will continue running a solana validator. this command will hang for around a minute, just wait for it to finish.
-yarn ts-node index.ts
+# open a new terminal as the previous one will continue running a solana validator
+# this command will hang for around a minute, just wait for it to finish
+NB_USERS=50 yarn ts-node index.ts
 
 ```
 
@@ -42,7 +43,7 @@ cp ../configure_mango/config/validator-identity.json localnet
 
 To run against your local validator:
 ```sh
-cargo run --bin mango-simulation -- -u http://localhost:8899 --identity localnet/validator-identity.json --keeper-authority localnet/authority.json --accounts localnet/accounts.json  --mango localnet/ids.json --mango-cluster localnet --duration 10 -q 2 --transaction-save-file tlog.csv --block-data-save-file blog.csv
+cargo run --bin mango-simulation -- --identity localnet/validator-identity.json --keeper-authority localnet/authority.json --accounts localnet/accounts.json  --mango localnet/ids.json --mango-cluster localnet --duration 10 -q 2 --transaction-save-file tlog.csv --block-data-save-file blog.csv
 ```
 
 You can also run the simulation against testnet, but you will need to run configure_mango 
