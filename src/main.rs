@@ -216,7 +216,7 @@ pub async fn main() -> anyhow::Result<()> {
     tasks.append(&mut writers_jh);
 
     let stats_handle =
-        mango_sim_stats.update_from_tx_status_stream(tx_status_sx.subscribe(), exit_signal.clone());
+        mango_sim_stats.update_from_tx_status_stream(tx_status_sx.subscribe());
     tasks.push(stats_handle);
 
     let mut confirmation_threads = confirmations_by_blocks(
