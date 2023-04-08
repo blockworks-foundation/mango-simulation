@@ -247,8 +247,13 @@ pub fn confirmations_by_blocks(
 
                 let block_slots = client
                     .get_blocks_with_commitment(start_block, None, commitment_confirmation)
-                    .await
-                    .unwrap();
+                    .await;
+                if let Err(error) = block_slots {
+                    warn!("Failed to download blocks: {}, skip", error);
+                    continue;
+                }
+
+                let block_slots = block_slots.unwrap();
                 if block_slots.is_empty() {
                     continue;
                 }
