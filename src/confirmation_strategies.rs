@@ -13,6 +13,7 @@ use solana_client::{nonblocking::rpc_client::RpcClient, rpc_config::RpcBlockConf
 use solana_sdk::{
     commitment_config::{CommitmentConfig, CommitmentLevel},
     signature::Signature,
+    slot_history::Slot,
 };
 use solana_transaction_status::{
     RewardType, TransactionDetails, UiConfirmedBlock, UiTransactionEncoding,
@@ -127,6 +128,28 @@ pub async fn process_blocks(
             });
         }
     }
+}
+
+async fn get_blocks_with_retry(
+    client: Arc<RpcClient>,
+    start_block: u64,
+    commitment_confirmation: CommitmentConfig,
+) -> Result<Vec<Slot>, ()> {
+    const N_TRY_REQUEST_BLOCKS: u64 = 4;
+    for _ in 0..N_TRY_REQUEST_BLOCKS {
+        let block_slots = client.get_blocks_with_commitment(start_block, None, commitment_confirmation)
+            .await;
+
+        match block_slots {
+            Ok(slots) => {
+                return Ok(slots);
+            },
+            Err(error) => {
+                warn!("Failed to download blocks: {}, retry", error);
+            }
+        }
+    }
+    Err(())
 }
 
 pub fn confirmations_by_blocks(
@@ -245,10 +268,12 @@ pub fn confirmations_by_blocks(
                 }
                 start_instant = tokio::time::Instant::now();
 
-                let block_slots = client
-                    .get_blocks_with_commitment(start_block, None, commitment_confirmation)
-                    .await
-                    .unwrap();
+                let block_slots = get_blocks_with_retry(client.clone(), start_block, commitment_confirmation).await;
+                if block_slots.is_err() {
+                    break;
+                }
+
+                let block_slots = block_slots.unwrap();
                 if block_slots.is_empty() {
                     continue;
                 }
