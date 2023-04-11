@@ -206,19 +206,19 @@ pub async fn main() -> anyhow::Result<()> {
     let mut tasks = vec![];
     tasks.push(blockhash_thread);
 
-    let (tx_status_sx, tx_status_rx) = tokio::sync::broadcast::channel(1024);
-    let (block_status_sx, block_status_rx) = tokio::sync::broadcast::channel(1024);
+    let (tx_status_sx, tx_status_rx) = tokio::sync::broadcast::channel(1000000);
+    let (block_status_sx, block_status_rx) = tokio::sync::broadcast::channel(1000000);
+
+    let stats_handle = mango_sim_stats.update_from_tx_status_stream(tx_status_rx);
+    tasks.push(stats_handle);
 
     let mut writers_jh = initialize_result_writers(
         transaction_save_file,
         block_data_save_file,
-        tx_status_rx,
+        tx_status_sx.subscribe(),
         block_status_rx,
     );
     tasks.append(&mut writers_jh);
-
-    let stats_handle = mango_sim_stats.update_from_tx_status_stream(tx_status_sx.subscribe());
-    tasks.push(stats_handle);
 
     let mut confirmation_threads = confirmations_by_blocks(
         nb_rpc_client,
@@ -243,7 +243,7 @@ pub async fn main() -> anyhow::Result<()> {
                     break;
                 }
                 tokio::time::sleep(Duration::from_secs(60)).await;
-                mango_sim_stats.report(false, METRICS_NAME);
+                mango_sim_stats.report(false, METRICS_NAME).await;
             }
         });
         tasks.push(reporting_thread);
@@ -259,6 +259,6 @@ pub async fn main() -> anyhow::Result<()> {
     exit_signal.store(true, Ordering::Relaxed);
 
     futures::future::join_all(tasks).await;
-    mango_sim_stats.report(true, METRICS_NAME);
+    mango_sim_stats.report(true, METRICS_NAME).await;
     Ok(())
 }
