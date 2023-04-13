@@ -10,7 +10,7 @@ use {
         },
         keeper::start_keepers,
         mango::{AccountKeys, MangoConfig},
-        market_markers::start_market_making_threads,
+        market_markers::{clean_market_makers, start_market_making_threads},
         result_writer::initialize_result_writers,
         states::PerpMarketCache,
         stats::MangoSimulationStats,
@@ -183,6 +183,13 @@ pub async fn main() -> anyhow::Result<()> {
     );
 
     let warmup_duration = Duration::from_secs(10);
+    clean_market_makers(
+        nb_rpc_client.clone(),
+        &account_keys_parsed,
+        &perp_market_caches,
+        blockhash.clone(),
+    )
+    .await;
     info!("waiting for keepers to warmup for {warmup_duration:?}");
     tokio::time::sleep(warmup_duration).await;
 
