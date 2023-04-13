@@ -182,7 +182,7 @@ pub async fn main() -> anyhow::Result<()> {
         0,
     );
 
-    let warmup_duration = Duration::from_secs(10);
+    let warmup_duration = Duration::from_secs(20);
     info!("waiting for keepers to warmup for {warmup_duration:?}");
     tokio::time::sleep(warmup_duration).await;
 
