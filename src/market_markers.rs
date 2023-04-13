@@ -352,5 +352,5 @@ pub async fn clean_market_makers(
     }
 
     futures::future::join_all(tasks).await;
-    info!("finished cleaning");
+    info!("finished cleaning market makers");
 }

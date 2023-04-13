@@ -147,6 +147,15 @@ pub async fn main() -> anyhow::Result<()> {
         .iter()
         .map(|x| Pubkey::from_str(x.as_str()).unwrap())
         .collect();
+
+    clean_market_makers(
+        nb_rpc_client.clone(),
+        &account_keys_parsed,
+        &perp_market_caches,
+        blockhash.clone(),
+    )
+    .await;
+
     // start keeper if keeper authority is present
     let keepers_jl = if let Some(keeper_authority) = keeper_authority {
         let jl = start_keepers(
@@ -183,13 +192,7 @@ pub async fn main() -> anyhow::Result<()> {
     );
 
     let warmup_duration = Duration::from_secs(10);
-    clean_market_makers(
-        nb_rpc_client.clone(),
-        &account_keys_parsed,
-        &perp_market_caches,
-        blockhash.clone(),
-    )
-    .await;
+
     info!("waiting for keepers to warmup for {warmup_duration:?}");
     tokio::time::sleep(warmup_duration).await;
 
