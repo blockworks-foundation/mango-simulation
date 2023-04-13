@@ -58,7 +58,7 @@ pub fn start(
     let group_pk = Pubkey::from_str(&group.public_key).unwrap();
     let cache_pk = Pubkey::from_str(&group.cache_key).unwrap();
     let mango_program_id = Pubkey::from_str(&group.mango_program_id).unwrap();
-    let _filter_config = FilterConfig {
+    let filter_config = FilterConfig {
         program_ids: vec![group.mango_program_id.clone()],
         account_ids: group
             .perp_markets
@@ -163,6 +163,7 @@ pub fn start(
                 },
                 rpc_ws_url: config.websocket_url,
             },
+            &filter_config,
             account_write_queue_sender,
             slot_queue_sender,
         )
