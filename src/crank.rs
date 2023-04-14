@@ -18,6 +18,7 @@ use solana_sdk::{
     hash::Hash, instruction::Instruction, pubkey::Pubkey, signature::Keypair, signer::Signer,
     transaction::Transaction,
 };
+use solana_transaction_status::extract_memos::{ExtractMemos, spl_memo_id_v3};
 use std::{
     str::FromStr,
     sync::{
@@ -79,8 +80,10 @@ pub fn start(
                 break;
             }
 
-            if let Ok((market, ixs)) = instruction_receiver.recv().await {
+            if let Ok((market, mut ixs)) = instruction_receiver.recv().await {
                 // TODO add priority fee
+
+                ixs.push(Instruction { program_id: spl_memo_id_v3(), accounts: vec![], data: Utc::now().timestamp_micros().to_le_bytes().into() });
 
                 let tx = Transaction::new_signed_with_payer(
                     &ixs,
