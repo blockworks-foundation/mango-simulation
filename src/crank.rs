@@ -16,8 +16,8 @@ use async_channel::unbounded;
 use chrono::Utc;
 use log::*;
 use solana_sdk::{
-    hash::Hash, instruction::Instruction, pubkey::Pubkey, signature::Keypair, signer::Signer,
-    transaction::Transaction,
+    compute_budget::ComputeBudgetInstruction, hash::Hash, instruction::Instruction, pubkey::Pubkey,
+    signature::Keypair, signer::Signer, transaction::Transaction,
 };
 use std::{
     str::FromStr,
@@ -82,15 +82,11 @@ pub fn start(
 
             if let Ok((market, mut ixs)) = instruction_receiver.recv().await {
                 // add priority fees
-                ixs.push(
-                    solana_sdk::compute_budget::ComputeBudgetInstruction::set_compute_unit_price(
-                        prioritization_fee,
-                    ),
-                );
-                // add timestamp to guarantee unique transactions
-                ixs.push(noop::instruction(
-                    Utc::now().timestamp_micros().to_le_bytes().into(),
+                ixs.push(ComputeBudgetInstruction::set_compute_unit_price(
+                    prioritization_fee,
                 ));
+                // add timestamp to guarantee unique transactions
+                ixs.push(noop::timestamp());
 
                 let tx = Transaction::new_signed_with_payer(
                     &ixs,

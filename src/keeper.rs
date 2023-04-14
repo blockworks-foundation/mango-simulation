@@ -1,3 +1,5 @@
+use solana_sdk::compute_budget::ComputeBudgetInstruction;
+
 use {
     crate::{
         helpers::to_sdk_instruction,
@@ -111,13 +113,11 @@ pub async fn send_transaction(
     keeper_instruction: KeeperInstruction,
 ) {
     // add a noop with a current timestamp to ensure unique txs
-    ixs.push(noop::instruction(Utc::now().timestamp_micros().to_le_bytes().into()));
+    ixs.push(noop::timestamp());
     // add priority fees
-    ixs.push(
-        solana_sdk::compute_budget::ComputeBudgetInstruction::set_compute_unit_price(
-            prioritization_fee,
-        ),
-    );
+    ixs.push(ComputeBudgetInstruction::set_compute_unit_price(
+        prioritization_fee,
+    ));
     let mut tx = Transaction::new_unsigned(Message::new(&ixs, Some(&payer.pubkey())));
     let recent_blockhash = blockhash.read().await;
     tx.sign(&[payer], *recent_blockhash);
