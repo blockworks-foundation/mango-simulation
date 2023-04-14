@@ -1,8 +1,7 @@
-use solana_transaction_status::extract_memos::spl_memo_id_v3;
-
 use {
     crate::{
         helpers::to_sdk_instruction,
+        noop,
         states::{KeeperInstruction, PerpMarketCache, TransactionSendRecord},
         tpu_manager::TpuManager,
     },
@@ -111,12 +110,8 @@ pub async fn send_transaction(
     prioritization_fee: u64,
     keeper_instruction: KeeperInstruction,
 ) {
-    // add a memo with a current timestamp to ensure unique txs
-    ixs.push(Instruction {
-        program_id: spl_memo_id_v3(),
-        accounts: vec![],
-        data: Utc::now().timestamp_micros().to_le_bytes().into(),
-    });
+    // add a noop with a current timestamp to ensure unique txs
+    ixs.push(noop::instruction(Utc::now().timestamp_micros().to_le_bytes().into()));
     // add priority fees
     ixs.push(
         solana_sdk::compute_budget::ComputeBudgetInstruction::set_compute_unit_price(
