@@ -1,6 +1,9 @@
+use solana_sdk::compute_budget::ComputeBudgetInstruction;
+
 use {
     crate::{
         helpers::to_sdk_instruction,
+        noop,
         states::{KeeperInstruction, PerpMarketCache, TransactionSendRecord},
         tpu_manager::TpuManager,
     },
@@ -102,14 +105,20 @@ fn create_cache_perp_markets_instructions(perp_markets: &[PerpMarketCache]) -> I
 
 pub async fn send_transaction(
     tpu_manager: TpuManager,
-    ixs: &[Instruction],
+    mut ixs: Vec<Instruction>,
     blockhash: Arc<RwLock<Hash>>,
     current_slot: Arc<AtomicU64>,
     payer: &Keypair,
     prioritization_fee: u64,
     keeper_instruction: KeeperInstruction,
 ) {
-    let mut tx = Transaction::new_unsigned(Message::new(ixs, Some(&payer.pubkey())));
+    // add a noop with a current timestamp to ensure unique txs
+    ixs.push(noop::timestamp());
+    // add priority fees
+    ixs.push(ComputeBudgetInstruction::set_compute_unit_price(
+        prioritization_fee,
+    ));
+    let mut tx = Transaction::new_unsigned(Message::new(&ixs, Some(&payer.pubkey())));
     let recent_blockhash = blockhash.read().await;
     tx.sign(&[payer], *recent_blockhash);
 
@@ -167,38 +176,20 @@ pub fn start_keepers(
     tokio::spawn(async move {
         let current_slot = current_slot.clone();
 
-        let prioritization_fee_ix =
-            solana_sdk::compute_budget::ComputeBudgetInstruction::set_compute_unit_price(
-                prioritization_fee,
-            );
-
-        let mut root_update_ixs = create_root_bank_update_instructions(&perp_markets);
-        let mut cache_prices = vec![create_update_price_cache_instructions(&perp_markets)];
-        let mut update_perp_cache = vec![create_cache_perp_markets_instructions(&perp_markets)];
-        let mut cache_root_bank_ix = vec![create_cache_root_bank_instruction(&perp_markets)];
-        let mut update_funding_ix = create_update_fundings_instructions(&perp_markets);
-        let mut quote_root_bank_ix =
+        let root_update_ixs = create_root_bank_update_instructions(&perp_markets);
+        let cache_prices = vec![create_update_price_cache_instructions(&perp_markets)];
+        let update_perp_cache = vec![create_cache_perp_markets_instructions(&perp_markets)];
+        let cache_root_bank_ix = vec![create_cache_root_bank_instruction(&perp_markets)];
+        let update_funding_ix = create_update_fundings_instructions(&perp_markets);
+        let quote_root_bank_ix =
             create_update_and_cache_quote_banks(&perp_markets, quote_root_bank, quote_node_banks);
 
-        if prioritization_fee > 0 {
-            root_update_ixs.insert(0, prioritization_fee_ix.clone());
-            cache_prices.insert(0, prioritization_fee_ix.clone());
-            update_perp_cache.insert(0, prioritization_fee_ix.clone());
-            cache_root_bank_ix.insert(0, prioritization_fee_ix.clone());
-            update_funding_ix.insert(0, prioritization_fee_ix.clone());
-            quote_root_bank_ix.insert(0, prioritization_fee_ix.clone());
-        }
-
         let blockhash = blockhash.clone();
-
-        // add prioritization instruction
-        //let prioritization_ix = ComputeBudgetInstruction::set_compute_unit_price(10000);
-        //root_update_ixs.insert(0, prioritization_ix.clone());
 
         while !exit_signal.load(Ordering::Relaxed) {
             send_transaction(
                 tpu_manager.clone(),
-                cache_prices.as_slice(),
+                cache_prices.clone(),
                 blockhash.clone(),
                 current_slot.clone(),
                 &authority,
@@ -209,7 +200,7 @@ pub fn start_keepers(
 
             send_transaction(
                 tpu_manager.clone(),
-                quote_root_bank_ix.as_slice(),
+                quote_root_bank_ix.clone(),
                 blockhash.clone(),
                 current_slot.clone(),
                 &authority,
@@ -221,7 +212,7 @@ pub fn start_keepers(
             for updates in update_funding_ix.chunks(3) {
                 send_transaction(
                     tpu_manager.clone(),
-                    updates,
+                    updates.to_vec(),
                     blockhash.clone(),
                     current_slot.clone(),
                     &authority,
@@ -233,7 +224,7 @@ pub fn start_keepers(
 
             send_transaction(
                 tpu_manager.clone(),
-                root_update_ixs.as_slice(),
+                root_update_ixs.clone(),
                 blockhash.clone(),
                 current_slot.clone(),
                 &authority,
@@ -244,7 +235,7 @@ pub fn start_keepers(
 
             send_transaction(
                 tpu_manager.clone(),
-                update_perp_cache.as_slice(),
+                update_perp_cache.clone(),
                 blockhash.clone(),
                 current_slot.clone(),
                 &authority,
@@ -255,7 +246,7 @@ pub fn start_keepers(
 
             send_transaction(
                 tpu_manager.clone(),
-                cache_root_bank_ix.as_slice(),
+                cache_root_bank_ix.clone(),
                 blockhash.clone(),
                 current_slot.clone(),
                 &authority,

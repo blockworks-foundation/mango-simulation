@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::BTreeMap, convert::TryFrom, mem::size_of};
+use std::{cell::RefCell, collections::{BTreeMap, HashSet}, convert::TryFrom, mem::size_of};
 
 use arrayref::array_ref;
 use async_channel::Sender;
@@ -18,7 +18,8 @@ use mango_feeds_connector::{account_write_filter::AccountWriteSink, chain_data::
 use crate::helpers::{to_sdk_instruction, to_sp_pk};
 
 const MAX_BACKLOG: usize = 2;
-const MAX_EVENTS_PER_TX: usize = 10;
+const MAX_ACCS_PER_TX: usize = 24;
+const MAX_EVENTS_PER_TX: usize = 50;
 
 pub struct MangoV3PerpCrankSink {
     mkt_pks_by_evq_pks: BTreeMap<Pubkey, Pubkey>,
@@ -93,23 +94,28 @@ impl AccountWriteSink for MangoV3PerpCrankSink {
 
             trace!("evq {pk:?} seq_num={seq_num} len={len} contains_fill_events={contains_fill_events} has_backlog={has_backlog}");
 
-            let mut mango_accounts: Vec<_> = event_queue
+            let mut mango_accounts = HashSet::new();
+            event_queue
                 .iter()
                 .take(MAX_EVENTS_PER_TX)
-                .flat_map(
-                    |e| match EventType::try_from(e.event_type).expect("mango v4 event") {
-                        EventType::Fill => {
-                            let fill: &FillEvent = cast_ref(e);
-                            vec![fill.maker, fill.taker]
+                .for_each(|e|
+                    if mango_accounts.len() < MAX_ACCS_PER_TX {
+                        match EventType::try_from(e.event_type).expect("mango v4 event") {
+                            EventType::Fill => {
+                                let fill: &FillEvent = cast_ref(e);
+                                mango_accounts.insert(fill.maker);
+                                mango_accounts.insert(fill.taker);
+                            }
+                            EventType::Out => {
+                                let out: &OutEvent = cast_ref(e);
+                                mango_accounts.insert(out.owner);
+                            }
+                            EventType::Liquidate => {
+
+                            }
                         }
-                        EventType::Out => {
-                            let out: &OutEvent = cast_ref(e);
-                            vec![out.owner]
-                        }
-                        EventType::Liquidate => vec![],
-                    },
-                )
-                .collect();
+                    }
+                );
 
             let pk = solana_sdk::pubkey::Pubkey::new_from_array(pk.to_bytes());
             let mkt_pk = self
@@ -124,7 +130,7 @@ impl AccountWriteSink for MangoV3PerpCrankSink {
                     &to_sp_pk(&self.cache_pk),
                     &to_sp_pk(mkt_pk),
                     &to_sp_pk(&pk),
-                    &mut mango_accounts,
+                    &mut mango_accounts.iter().map(|pk| pk.clone()).collect::<Vec<_>>(),
                     MAX_EVENTS_PER_TX,
                 )
                 .unwrap(),

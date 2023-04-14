@@ -6,6 +6,7 @@ pub mod keeper;
 pub mod mango;
 pub mod mango_v3_perp_crank_sink;
 pub mod market_markers;
+pub mod noop;
 pub mod result_writer;
 pub mod rotating_queue;
 pub mod states;
