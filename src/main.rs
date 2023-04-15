@@ -10,7 +10,7 @@ use {
         },
         keeper::start_keepers,
         mango::{AccountKeys, MangoConfig},
-        market_markers::start_market_making_threads,
+        market_markers::{clean_market_makers, start_market_making_threads},
         result_writer::initialize_result_writers,
         states::PerpMarketCache,
         stats::MangoSimulationStats,
@@ -147,6 +147,15 @@ pub async fn main() -> anyhow::Result<()> {
         .iter()
         .map(|x| Pubkey::from_str(x.as_str()).unwrap())
         .collect();
+
+    clean_market_makers(
+        nb_rpc_client.clone(),
+        &account_keys_parsed,
+        &perp_market_caches,
+        blockhash.clone(),
+    )
+    .await;
+
     // start keeper if keeper authority is present
     let keepers_jl = if let Some(keeper_authority) = keeper_authority {
         let jl = start_keepers(
