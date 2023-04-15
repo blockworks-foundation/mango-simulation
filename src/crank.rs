@@ -2,6 +2,7 @@ use crate::{
     helpers::to_sp_pk,
     mango::GroupConfig,
     mango_v3_perp_crank_sink::MangoV3PerpCrankSink,
+    noop,
     states::{KeeperInstruction, TransactionSendRecord},
     tpu_manager::TpuManager,
 };
@@ -15,8 +16,8 @@ use async_channel::unbounded;
 use chrono::Utc;
 use log::*;
 use solana_sdk::{
-    hash::Hash, instruction::Instruction, pubkey::Pubkey, signature::Keypair, signer::Signer,
-    transaction::Transaction,
+    compute_budget::ComputeBudgetInstruction, hash::Hash, instruction::Instruction, pubkey::Pubkey,
+    signature::Keypair, signer::Signer, transaction::Transaction,
 };
 use std::{
     str::FromStr,
@@ -58,7 +59,7 @@ pub fn start(
     let group_pk = Pubkey::from_str(&group.public_key).unwrap();
     let cache_pk = Pubkey::from_str(&group.cache_key).unwrap();
     let mango_program_id = Pubkey::from_str(&group.mango_program_id).unwrap();
-    let _filter_config = FilterConfig {
+    let filter_config = FilterConfig {
         program_ids: vec![group.mango_program_id.clone()],
         account_ids: group
             .perp_markets
@@ -74,10 +75,6 @@ pub fn start(
             "crank-tx-sender signing with keypair pk={:?}",
             identity.pubkey()
         );
-        let prioritization_fee_ix =
-            solana_sdk::compute_budget::ComputeBudgetInstruction::set_compute_unit_price(
-                prioritization_fee,
-            );
 
         loop {
             if exit_signal.load(Ordering::Acquire) {
@@ -85,7 +82,12 @@ pub fn start(
             }
 
             if let Ok((market, mut ixs)) = instruction_receiver.recv().await {
-                ixs.insert(0, prioritization_fee_ix.clone());
+                // add priority fees
+                ixs.push(ComputeBudgetInstruction::set_compute_unit_price(
+                    prioritization_fee,
+                ));
+                // add timestamp to guarantee unique transactions
+                ixs.push(noop::timestamp());
 
                 let tx = Transaction::new_signed_with_payer(
                     &ixs,
@@ -168,6 +170,7 @@ pub fn start(
                 },
                 rpc_ws_url: config.websocket_url,
             },
+            &filter_config,
             account_write_queue_sender,
             slot_queue_sender,
         )

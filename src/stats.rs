@@ -366,31 +366,30 @@ impl MangoSimulationStats {
         );
 
         println!(
-            "Transactions confirmed {}%",
+            "Transactions confirmed : {}%",
             (counters.num_confirmed_txs * 100)
                 .checked_div(counters.num_sent)
                 .unwrap_or(0)
         );
         println!(
-            "Transactions successful {}%",
+            "Transactions successful : {}%",
             (counters.num_successful * 100)
                 .checked_div(counters.num_sent)
                 .unwrap_or(0)
         );
         println!(
-            "Transactions timed out {}%",
+            "Transactions timed out : {}%",
             (counters.num_timeout_txs * 100)
                 .checked_div(counters.num_sent)
                 .unwrap_or(0)
         );
-        let top_5_errors = diff.errors.iter().sorted_by(|x,y| {(*y.1).cmp(x.1)}).take(5).collect_vec();
+        let top_5_errors = counters.errors.iter().sorted_by(|x,y| {(*y.1).cmp(x.1)}).take(5).enumerate().collect_vec();
         let mut errors_to_print: String = String::new();
-        println!(" Top 5 errors (diff)");
-        for (error, count) in top_5_errors {
-            println!("{}({})", error, count);
-            errors_to_print += format!("{}({}),", error, count).as_str();
+        for (idx, (error, count)) in top_5_errors {
+            println!("Error #{idx} : {error} ({count})");
+            errors_to_print += format!("{error}({count}),").as_str();
         }
-        println!("\n\n");
+        println!("\n");
 
         if !is_final {
             datapoint_info!(
@@ -491,7 +490,7 @@ impl MangoSimulationStats {
                     i64
                 ),
                 (
-                    "top 5 errors",
+                    "top_5_errors",
                     errors_to_print,
                     String
                 )

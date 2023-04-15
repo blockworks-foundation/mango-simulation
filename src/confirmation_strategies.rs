@@ -137,13 +137,14 @@ async fn get_blocks_with_retry(
 ) -> Result<Vec<Slot>, ()> {
     const N_TRY_REQUEST_BLOCKS: u64 = 4;
     for _ in 0..N_TRY_REQUEST_BLOCKS {
-        let block_slots = client.get_blocks_with_commitment(start_block, None, commitment_confirmation)
+        let block_slots = client
+            .get_blocks_with_commitment(start_block, None, commitment_confirmation)
             .await;
 
         match block_slots {
             Ok(slots) => {
                 return Ok(slots);
-            },
+            }
             Err(error) => {
                 warn!("Failed to download blocks: {}, retry", error);
             }
@@ -268,7 +269,9 @@ pub fn confirmations_by_blocks(
                 }
                 start_instant = tokio::time::Instant::now();
 
-                let block_slots = get_blocks_with_retry(client.clone(), start_block, commitment_confirmation).await;
+                let block_slots =
+                    get_blocks_with_retry(client.clone(), start_block, commitment_confirmation)
+                        .await;
                 if block_slots.is_err() {
                     break;
                 }
@@ -277,7 +280,7 @@ pub fn confirmations_by_blocks(
                 if block_slots.is_empty() {
                     continue;
                 }
-                start_block = *block_slots.last().unwrap();
+                start_block = *block_slots.last().unwrap() + 1;
 
                 let blocks = block_slots.iter().map(|slot| {
                     client.get_block_with_config(
