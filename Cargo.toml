@@ -34,6 +34,7 @@ serde_json = "1.0.79"
 serde_yaml = "0.8.23"
 thiserror = "1.0"
 tokio = { version = "1", features = ["full"] }
+regex = "1.7.3"
 
 solana-client = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.2" }
 solana-core = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.2" }
@@ -49,6 +50,7 @@ solana-logger = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.
 solana-transaction-status = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.2" }
 solana-quic-client = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.2" }
 solana-account-decoder = { git = "https://github.com/solana-labs/solana.git", tag="v1.15.2" }
+
 
 # pin program to mango-v3 version of solana sdk
 # now we can use sdk for recent version and program for legacy

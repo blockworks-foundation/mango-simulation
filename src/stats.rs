@@ -4,15 +4,16 @@ use std::{
         atomic::{AtomicU64, Ordering},
         Arc,
     },
-    time::Instant,
+    time::Instant, collections::HashMap,
 };
 
 use crate::states::{KeeperInstruction, TransactionConfirmRecord};
+use iter_tools::Itertools;
 use solana_metrics::datapoint_info;
-use tokio::task::JoinHandle;
+use tokio::{task::JoinHandle, sync::RwLock};
 
 // Non atomic version of counters
-#[derive(Clone, Default, Debug, Copy)]
+#[derive(Clone, Default, Debug)]
 struct NACounters {
     num_confirmed_txs: u64,
     num_error_txs: u64,
@@ -39,10 +40,21 @@ struct NACounters {
     succ_cache_root_banks_txs: u64,
     succ_update_perp_cache_txs: u64,
     succ_update_funding_txs: u64,
+
+    // errors section
+    errors: HashMap<String, u64>,
 }
 
 impl NACounters {
     pub fn diff(&self, other: &NACounters) -> NACounters {
+        let mut new_error_count = HashMap::new();
+        for (error, count) in &self.errors {
+            if let Some(v) = other.errors.get( error ) {
+                new_error_count.insert(error.clone(), *count - *v);
+            } else {
+                new_error_count.insert(error.clone(), *count);
+            }
+        }
         NACounters {
             num_confirmed_txs: self.num_confirmed_txs - other.num_confirmed_txs,
             num_error_txs: self.num_error_txs - other.num_error_txs,
@@ -73,6 +85,7 @@ impl NACounters {
             succ_update_perp_cache_txs: self.succ_update_perp_cache_txs
                 - other.succ_update_perp_cache_txs,
             succ_update_funding_txs: self.succ_update_funding_txs - other.succ_update_funding_txs,
+            errors: new_error_count,
         }
     }
 }
@@ -104,10 +117,13 @@ struct Counters {
     succ_cache_root_banks_txs: Arc<AtomicU64>,
     succ_update_perp_cache_txs: Arc<AtomicU64>,
     succ_update_funding_txs: Arc<AtomicU64>,
+
+    // Errors
+    errors: Arc<RwLock<HashMap<String, u64>>>,
 }
 
 impl Counters {
-    pub fn to_na_counters(&self) -> NACounters {
+    pub async fn to_na_counters(&self) -> NACounters {
         NACounters {
             num_confirmed_txs: self.num_confirmed_txs.load(Ordering::Relaxed),
             num_error_txs: self.num_error_txs.load(Ordering::Relaxed),
@@ -138,6 +154,7 @@ impl Counters {
             succ_cache_root_banks_txs: self.succ_cache_root_banks_txs.load(Ordering::Relaxed),
             succ_update_perp_cache_txs: self.succ_update_perp_cache_txs.load(Ordering::Relaxed),
             succ_update_funding_txs: self.succ_update_funding_txs.load(Ordering::Relaxed),
+            errors: self.errors.read().await.clone(),
         }
     }
 }
@@ -170,14 +187,22 @@ impl MangoSimulationStats {
         tx_confirm_record_reciever: tokio::sync::broadcast::Receiver<TransactionConfirmRecord>,
     ) -> JoinHandle<()> {
         let counters = self.counters.clone();
+        let regex = regex::Regex::new(r"Error processing Instruction \d+: ").unwrap();
         tokio::spawn(async move {
             let mut tx_confirm_record_reciever = tx_confirm_record_reciever;
             loop {
                 if let Ok(tx_data) = tx_confirm_record_reciever.recv().await {
                     if let Some(_) = tx_data.confirmed_at {
                         counters.num_confirmed_txs.fetch_add(1, Ordering::Relaxed);
-                        if let Some(_) = tx_data.error {
+                        if let Some(error) = tx_data.error {
+                            let error = regex.replace_all(&error, "").to_string();
                             counters.num_error_txs.fetch_add(1, Ordering::Relaxed);
+                            let mut lock = counters.errors.write().await;
+                            if let Some(value) = lock.get_mut(&error) {
+                                *value += 1;
+                            } else {
+                                lock.insert(error, 1);
+                            }
                         } else {
                             counters.num_successful.fetch_add(1, Ordering::Relaxed);
 
@@ -262,13 +287,13 @@ impl MangoSimulationStats {
         }
     }
 
-    pub fn report(&mut self, is_final: bool, name: &'static str) {
+    pub async fn report(&mut self, is_final: bool, name: &'static str) {
         let time_diff = std::time::Instant::now() - self.instant;
-        let counters = self.counters.to_na_counters();
+        let counters = self.counters.to_na_counters().await;
         let diff = {
             let mut prev_counter_lock = self.previous_counters.lock().unwrap();
             let diff = counters.diff(&prev_counter_lock);
-            *prev_counter_lock = counters;
+            *prev_counter_lock = counters.clone();
             diff
         };
 
@@ -341,24 +366,30 @@ impl MangoSimulationStats {
         );
 
         println!(
-            "Transactions confirmed {}%",
+            "Transactions confirmed : {}%",
             (counters.num_confirmed_txs * 100)
                 .checked_div(counters.num_sent)
                 .unwrap_or(0)
         );
         println!(
-            "Transactions successful {}%",
+            "Transactions successful : {}%",
             (counters.num_successful * 100)
                 .checked_div(counters.num_sent)
                 .unwrap_or(0)
         );
         println!(
-            "Transactions timed out {}%",
+            "Transactions timed out : {}%",
             (counters.num_timeout_txs * 100)
                 .checked_div(counters.num_sent)
                 .unwrap_or(0)
         );
-        println!("\n\n");
+        let top_5_errors = counters.errors.iter().sorted_by(|x,y| {(*y.1).cmp(x.1)}).take(5).enumerate().collect_vec();
+        let mut errors_to_print: String = String::new();
+        for (idx, (error, count)) in top_5_errors {
+            println!("Error #{idx} : {error} ({count})");
+            errors_to_print += format!("{error}({count}),").as_str();
+        }
+        println!("\n");
 
         if !is_final {
             datapoint_info!(
@@ -458,6 +489,11 @@ impl MangoSimulationStats {
                     diff.succ_update_funding_txs,
                     i64
                 ),
+                (
+                    "top_5_errors",
+                    errors_to_print,
+                    String
+                )
             );
         }
     }

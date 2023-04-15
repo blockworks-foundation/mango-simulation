@@ -75,6 +75,7 @@ pub fn start(
             "crank-tx-sender signing with keypair pk={:?}",
             identity.pubkey()
         );
+
         loop {
             if exit_signal.load(Ordering::Acquire) {
                 break;
