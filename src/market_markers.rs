@@ -21,13 +21,13 @@ use solana_sdk::{
     compute_budget, hash::Hash, instruction::Instruction, message::Message, signature::Keypair,
     signer::Signer, transaction::Transaction,
 };
-use tokio::{sync::RwLock, task::JoinHandle};
+use tokio::{sync::RwLock, task::{JoinHandle, self}};
 
 use crate::{
     helpers::{to_sdk_instruction, to_sp_pk},
     mango::AccountKeys,
     states::{PerpMarketCache, TransactionSendRecord},
-    tpu_manager::TpuManager,
+    tpu_manager::{TpuManager, self},
 };
 
 pub fn create_ask_bid_transaction(
@@ -195,10 +195,13 @@ pub async fn send_mm_transactions(
             batch_to_send.push((tx, record));
         }
 
+        let tpu_manager = tpu_manager.clone();
+        task::spawn(async move{
+            if !tpu_manager.send_transaction_batch(&batch_to_send).await {
+                println!("sending failed on tpu client");
+            }
+        });
 
-        if !tpu_manager.send_transaction_batch(&batch_to_send).await {
-            println!("sending failed on tpu client");
-        }
     }
 }
 
