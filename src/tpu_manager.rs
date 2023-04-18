@@ -1,3 +1,4 @@
+use bincode::serialize;
 use log::{info, warn};
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_client::{connection_cache::ConnectionCache, nonblocking::tpu_client::TpuClient};
@@ -142,4 +143,30 @@ impl TpuManager {
 
         tpu_client.send_transaction(transaction).await
     }
+
+       pub async fn send_transaction_batch(
+        &self,
+        batch: &Vec<(solana_sdk::transaction::Transaction, TransactionSendRecord)>,
+    ) -> bool {
+        let tpu_client = self.get_tpu_client().await;
+
+
+        for (tx, record) in batch {
+
+        self.stats
+            .inc_send(&record.keeper_instruction);
+
+        let tx_sent_record = self.tx_send_record.clone();
+        let sent = tx_sent_record.send(record.clone());
+        if sent.is_err() {
+            warn!(
+                "sending error on channel : {}",
+                sent.err().unwrap().to_string()
+            );
+        }
+        }
+
+        tpu_client.try_send_wire_transaction_batch(batch.iter().map(|(tx, _)| serialize(tx).expect("serialization should succeed")).collect()).await.is_ok()
+    }
+
 }
