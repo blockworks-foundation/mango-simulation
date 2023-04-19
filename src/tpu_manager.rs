@@ -4,6 +4,7 @@ use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_client::{connection_cache::ConnectionCache, nonblocking::tpu_client::TpuClient};
 use solana_quic_client::{QuicConfig, QuicConnectionManager, QuicPool};
 use solana_sdk::signature::Keypair;
+use solana_sdk::transaction::Transaction;
 use std::{
     net::{IpAddr, Ipv4Addr},
     sync::{
@@ -146,11 +147,11 @@ impl TpuManager {
 
     pub async fn send_transaction_batch(
         &self,
-        batch: &Vec<(solana_sdk::transaction::Transaction, TransactionSendRecord)>,
+        batch: &Vec<(Transaction, TransactionSendRecord)>,
     ) -> bool {
         let tpu_client = self.get_tpu_client().await;
 
-        for (tx, record) in batch {
+        for (_tx, record) in batch {
             self.stats.inc_send(&record.keeper_instruction);
 
             let tx_sent_record = self.tx_send_record.clone();
