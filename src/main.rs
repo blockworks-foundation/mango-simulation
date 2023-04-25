@@ -123,7 +123,7 @@ pub async fn main() -> anyhow::Result<()> {
     // continuosly fetch blockhash
     let rpc_client = Arc::new(RpcClient::new_with_commitment(
         json_rpc_url.to_string(),
-        CommitmentConfig::confirmed(),
+        CommitmentConfig::finalized(),
     ));
     let exit_signal = Arc::new(AtomicBool::new(false));
     let latest_blockhash = get_latest_blockhash(&rpc_client.clone()).await;

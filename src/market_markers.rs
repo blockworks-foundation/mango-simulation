@@ -21,7 +21,10 @@ use solana_sdk::{
     compute_budget, hash::Hash, instruction::Instruction, message::Message, signature::Keypair,
     signer::Signer, transaction::Transaction,
 };
-use tokio::{sync::RwLock, task::JoinHandle};
+use tokio::{
+    sync::RwLock,
+    task::{self, JoinHandle},
+};
 
 use crate::{
     helpers::{to_sdk_instruction, to_sp_pk},
@@ -170,6 +173,7 @@ pub async fn send_mm_transactions(
             100,
             1000,
         );
+        let mut batch_to_send = Vec::with_capacity(perp_market_caches.len());
         for (i, c) in perp_market_caches.iter().enumerate() {
             let prioritization_fee = prioritization_fee_by_market[i];
             let mut tx = create_ask_bid_transaction(
@@ -182,7 +186,7 @@ pub async fn send_mm_transactions(
             let recent_blockhash = *blockhash.read().await;
             tx.sign(&[mango_account_signer], recent_blockhash);
 
-            let tx_send_record = TransactionSendRecord {
+            let record = TransactionSendRecord {
                 signature: tx.signatures[0],
                 sent_at: Utc::now(),
                 sent_slot: slot.load(Ordering::Acquire),
@@ -191,10 +195,15 @@ pub async fn send_mm_transactions(
                 priority_fees: prioritization_fee,
                 keeper_instruction: None,
             };
-            if !tpu_manager.send_transaction(&tx, tx_send_record).await {
+            batch_to_send.push((tx, record));
+        }
+
+        let tpu_manager = tpu_manager.clone();
+        task::spawn(async move {
+            if !tpu_manager.send_transaction_batch(&batch_to_send).await {
                 println!("sending failed on tpu client");
             }
-        }
+        });
     }
 }
 

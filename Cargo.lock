@@ -3241,6 +3241,7 @@ dependencies = [
  "async-channel",
  "async-std",
  "async-trait",
+ "bincode",
  "borsh 0.9.3",
  "bytemuck",
  "chrono",
