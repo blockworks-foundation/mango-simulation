@@ -1,10 +1,11 @@
 use bincode::serialize;
-use log::{info, warn};
+use log::{info, warn, error};
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_client::{connection_cache::ConnectionCache, nonblocking::tpu_client::TpuClient};
 use solana_quic_client::{QuicConfig, QuicConnectionManager, QuicPool};
 use solana_sdk::signature::Keypair;
 use solana_sdk::transaction::Transaction;
+use std::time::Duration;
 use std::{
     net::{IpAddr, Ipv4Addr},
     sync::{
@@ -120,6 +121,16 @@ impl TpuManager {
         Ok(())
     }
 
+    pub fn force_reset_after_every(&self, duration: Duration) {
+        let this = self.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(duration).await;
+            if let Err(e) = this.reset_tpu_client().await {
+                error!("timely restart of tpu client failed {}", e);
+            }
+        });
+    }
+
     async fn get_tpu_client(&self) -> Arc<QuicTpuClient> {
         self.tpu_client.read().await.clone()
     }
@@ -140,6 +151,9 @@ impl TpuManager {
                 "sending error on channel : {}",
                 sent.err().unwrap().to_string()
             );
+            if let Err(e) = self.reset().await {
+                error!("error while reseting tpu client {}", e);
+            }
         }
 
         tpu_client.send_transaction(transaction).await

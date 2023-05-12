@@ -109,6 +109,8 @@ pub async fn main() -> anyhow::Result<()> {
     )
     .await;
 
+    tpu_manager.force_reset_after_every(Duration::from_secs(300));
+
     info!(
         "accounts:{:?} markets:{:?} quotes_per_second:{:?} expected_tps:{:?} duration:{:?}",
         account_keys_parsed.len(),
