@@ -317,49 +317,52 @@ pub async fn clean_market_makers(
     blockhash: Arc<RwLock<Hash>>,
 ) {
     info!("Cleaning previous transactions by market makers");
-    let mut tasks = vec![];
 
-    for market_maker in account_keys_parsed {
-        let mango_account_pk =
-            Pubkey::from_str(market_maker.mango_account_pks[0].as_str()).unwrap();
-        for perp_market in perp_market_caches {
-            let market_maker = market_maker.clone();
-            let perp_market = perp_market.clone();
-            let rpc_client = rpc_client.clone();
-            let mango_account_pk = mango_account_pk.clone();
-            let blockhash = blockhash.clone();
+    for account_keys_parsed in account_keys_parsed.chunks(10) {
+        let mut tasks = vec![];
+        for market_maker in account_keys_parsed {
+            let mango_account_pk =
+                Pubkey::from_str(market_maker.mango_account_pks[0].as_str()).unwrap();
+            for perp_market in perp_market_caches {
+                let market_maker = market_maker.clone();
+                let perp_market = perp_market.clone();
+                let rpc_client = rpc_client.clone();
+                let mango_account_pk = mango_account_pk.clone();
+                let blockhash = blockhash.clone();
 
-            let task = tokio::spawn(async move {
-                let mango_account_signer =
-                    Keypair::from_bytes(market_maker.secret_key.as_slice()).unwrap();
+                let task = tokio::spawn(async move {
+                    let mango_account_signer =
+                        Keypair::from_bytes(market_maker.secret_key.as_slice()).unwrap();
 
-                for _ in 0..10 {
-                    let mut tx = create_cancel_all_orders(
-                        &perp_market,
-                        mango_account_pk,
-                        &mango_account_signer,
-                    );
+                    for _ in 0..10 {
+                        let mut tx = create_cancel_all_orders(
+                            &perp_market,
+                            mango_account_pk,
+                            &mango_account_signer,
+                        );
 
-                    let recent_blockhash = *blockhash.read().await;
-                    tx.sign(&[&mango_account_signer], recent_blockhash);
-                    // send and confirm the transaction with an RPC
-                    if let Ok(res) = tokio::time::timeout(
-                        Duration::from_secs(10),
-                        rpc_client.send_and_confirm_transaction(&tx),
-                    )
-                    .await
-                    {
-                        match res {
-                            Ok(_) => break,
-                            Err(e) => info!("Error occured while doing cancel all for ma : {} and perp market : {} error : {}", mango_account_pk, perp_market.perp_market_pk, e),
+                        let recent_blockhash = *blockhash.read().await;
+                        tx.sign(&[&mango_account_signer], recent_blockhash);
+                        let sig = tx.signatures[0];
+                        // send and confirm the transaction with an RPC
+                        if let Ok(res) = tokio::time::timeout(
+                            Duration::from_secs(10),
+                            rpc_client.send_and_confirm_transaction(&tx),
+                        )
+                        .await
+                        {
+                            match res {
+                                Ok(_) => break,
+                                Err(e) => info!("Error occured while doing cancel all for ma : {}, sig : {} perp market : {} error : {}", mango_account_pk, sig, perp_market.perp_market_pk, e),
+                            }
                         }
                     }
-                }
-            });
-            tasks.push(task);
+                });
+                tasks.push(task);
+            }
         }
-    }
 
-    futures::future::join_all(tasks).await;
+        futures::future::join_all(tasks).await;
+    }
     info!("finished cleaning market makers");
 }

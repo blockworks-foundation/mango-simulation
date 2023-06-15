@@ -1,6 +1,6 @@
 use chrono::Utc;
-use std::str::FromStr;
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
+use std::str::FromStr;
 
 pub fn instruction(data: Vec<u8>) -> Instruction {
     Instruction {

@@ -9,6 +9,8 @@ The code then will create transaction request (q) requests per seconds for (n) s
 
 For the best results to avoid limits by quic it is better to fill the argument "identity" of a valid staked validator for the cluster you are testing with.
 
+Do not use localhost use http://127.0.0.1:8899 instead.
+
 ## Build
 
 Install configure-mango
@@ -69,7 +71,7 @@ OPTIONS:
     -i, --identity <FILEPATH>                 Identity used in the QUIC connection. Identity with a lot of stake has a
                                               better chance to send transaction to the leader
     -u, --url <URL_OR_MONIKER>                URL for Solana's JSON RPC or moniker (or their first letter): [mainnet-
-                                              beta, testnet, devnet, localhost]
+                                              beta, testnet, devnet, 127.0.0.1:8899]
     -k, --keeper-authority <FILEPATH>         If specified, authority keypair would be used to pay for keeper
                                               transactions
     -c, --mango-cluster <STR>                 Name of mango cluster from ids.json

@@ -1,8 +1,12 @@
+use mango_simulation::confirmation_strategies::confirmation_by_lite_rpc_notification_stream;
+use solana_lite_rpc_core::{block_store::BlockStore, tx_store::{TxStore, empty_tx_store}, notifications::NotificationMsg};
+use solana_lite_rpc_services::{transaction_service::{TransactionService, TransactionServiceBuilder}, tx_sender::TxSender, tpu_utils::tpu_service::TpuService, block_listenser::{BlockListener}, transaction_replayer::TransactionReplayer};
+use tokio::sync::mpsc::{UnboundedSender, unbounded_channel};
+
 use {
     log::info,
     mango_simulation::{
         cli,
-        confirmation_strategies::confirmations_by_blocks,
         crank::{self, KeeperConfig},
         helpers::{
             get_latest_blockhash, get_mango_market_perps_cache, start_blockhash_polling_service,
@@ -17,7 +21,7 @@ use {
         tpu_manager::TpuManager,
     },
     serde_json,
-    solana_client::{nonblocking::rpc_client::RpcClient as NbRpcClient, rpc_client::RpcClient},
+    solana_client::nonblocking::rpc_client::RpcClient as NbRpcClient,
     solana_program::pubkey::Pubkey,
     solana_sdk::{commitment_config::CommitmentConfig, signer::keypair::Keypair},
     std::{
@@ -32,6 +36,16 @@ use {
 
 const METRICS_NAME: &str = "mango-bencher";
 
+async fn configure_transaction_service(rpc_client: Arc<NbRpcClient>, ws_address: String, identity: Keypair, block_store: BlockStore, tx_store: TxStore, notifier: UnboundedSender<NotificationMsg> ) -> (TransactionService, JoinHandle<String>) {
+    let slot = rpc_client.get_slot().await.expect("GetSlot should work");
+    let tpu_service = TpuService::new(slot, 8, Arc::new(identity), rpc_client.clone(), ws_address, tx_store.clone()).await.expect("Should be able to create TPU");
+    let tx_sender = TxSender::new(tx_store.clone(), tpu_service.clone());
+    let block_listenser = BlockListener::new(rpc_client.clone(), tx_store.clone(), block_store.clone());
+    let replayer = TransactionReplayer::new(tpu_service.clone(), tx_store.clone(), Duration::from_secs(2));
+    let builder = TransactionServiceBuilder::new(tx_sender, replayer, block_listenser, tpu_service, 1_000_000);
+    builder.start(Some(notifier), block_store, 10, Duration::from_secs(300)).await
+}
+
 #[tokio::main(flavor = "multi_thread", worker_threads = 10)]
 pub async fn main() -> anyhow::Result<()> {
     solana_logger::setup_with_default("info");
@@ -43,7 +57,7 @@ pub async fn main() -> anyhow::Result<()> {
     let cli::Config {
         json_rpc_url,
         websocket_url,
-        id,
+        identity,
         account_keys,
         mango_keys,
         duration,
@@ -81,12 +95,17 @@ pub async fn main() -> anyhow::Result<()> {
         .groups
         .iter()
         .find(|g| g.name == *mango_group_id)
-        .unwrap();
+        .expect("Mango group config should exist");
 
     let nb_rpc_client = Arc::new(NbRpcClient::new_with_commitment(
         json_rpc_url.to_string(),
         CommitmentConfig::confirmed(),
     ));
+
+    let tx_store = empty_tx_store();
+    let block_store = BlockStore::new(&nb_rpc_client).await.expect("Blockstore should be created");
+    let (notif_sx, notif_rx) = unbounded_channel();
+    let (transaction_service, tx_service_jh) = configure_transaction_service(nb_rpc_client.clone(), websocket_url.clone(), Keypair::from_bytes(identity.to_bytes().as_slice()).unwrap(), block_store, tx_store, notif_sx).await;
 
     let nb_users = account_keys_parsed.len();
 
@@ -99,17 +118,24 @@ pub async fn main() -> anyhow::Result<()> {
 
     let (tx_record_sx, tx_record_rx) = tokio::sync::mpsc::unbounded_channel();
 
-    let tpu_manager = TpuManager::new(
+    // continuosly fetch blockhash
+    let exit_signal = Arc::new(AtomicBool::new(false));
+    let latest_blockhash = get_latest_blockhash(&nb_rpc_client.clone()).await;
+    let blockhash = Arc::new(RwLock::new(latest_blockhash));
+    let current_slot = Arc::new(AtomicU64::new(0));
+    let blockhash_thread = start_blockhash_polling_service(
+        exit_signal.clone(),
+        blockhash.clone(),
+        current_slot.clone(),
         nb_rpc_client.clone(),
-        websocket_url.clone(),
-        solana_client::tpu_client::TpuClientConfig::default().fanout_slots,
-        Keypair::from_bytes(id.to_bytes().as_slice()).unwrap(),
+    );
+
+    let tpu_manager = TpuManager::new(
+        transaction_service,
         mango_sim_stats.clone(),
         tx_record_sx.clone(),
     )
-    .await;
-
-    tpu_manager.force_reset_after_every(Duration::from_secs(300));
+    .await?;
 
     info!(
         "accounts:{:?} markets:{:?} quotes_per_second:{:?} expected_tps:{:?} duration:{:?}",
@@ -122,34 +148,20 @@ pub async fn main() -> anyhow::Result<()> {
         duration
     );
 
-    // continuosly fetch blockhash
-    let rpc_client = Arc::new(RpcClient::new_with_commitment(
-        json_rpc_url.to_string(),
-        CommitmentConfig::finalized(),
-    ));
-    let exit_signal = Arc::new(AtomicBool::new(false));
-    let latest_blockhash = get_latest_blockhash(&rpc_client.clone()).await;
-    let blockhash = Arc::new(RwLock::new(latest_blockhash));
-    let current_slot = Arc::new(AtomicU64::new(0));
-    let blockhash_thread = start_blockhash_polling_service(
-        exit_signal.clone(),
-        blockhash.clone(),
-        current_slot.clone(),
-        rpc_client.clone(),
-    );
-    let mango_program_pk = Pubkey::from_str(mango_group_config.mango_program_id.as_str()).unwrap();
+    let mango_program_pk = Pubkey::from_str(mango_group_config.mango_program_id.as_str()).expect("Mango program should be able to convert into pubkey");
     let perp_market_caches: Vec<PerpMarketCache> =
-        get_mango_market_perps_cache(rpc_client.clone(), mango_group_config, &mango_program_pk);
+        get_mango_market_perps_cache(nb_rpc_client.clone(), mango_group_config, &mango_program_pk)
+            .await;
 
     let quote_root_bank =
-        Pubkey::from_str(mango_group_config.tokens.last().unwrap().root_key.as_str()).unwrap();
+        Pubkey::from_str(mango_group_config.tokens.last().unwrap().root_key.as_str()).expect("Quote root bank should be able to convert into pubkey");();
     let quote_node_banks = mango_group_config
         .tokens
         .last()
         .unwrap()
         .node_keys
         .iter()
-        .map(|x| Pubkey::from_str(x.as_str()).unwrap())
+        .map(|x| Pubkey::from_str(x.as_str()).expect("Token mint should be able to convert into pubkey"))
         .collect();
 
     clean_market_makers(
@@ -177,7 +189,7 @@ pub async fn main() -> anyhow::Result<()> {
     } else {
         None
     };
-    let from_slot = current_slot.load(Ordering::Relaxed);
+
     let keeper_config = KeeperConfig {
         program_id: to_sdk_pk(&mango_program_pk),
         rpc_url: json_rpc_url.clone(),
@@ -191,7 +203,7 @@ pub async fn main() -> anyhow::Result<()> {
         current_slot.clone(),
         tpu_manager.clone(),
         mango_group_config,
-        id,
+        identity,
         keeper_prioritization,
     );
 
@@ -205,7 +217,7 @@ pub async fn main() -> anyhow::Result<()> {
         exit_signal.clone(),
         blockhash.clone(),
         current_slot.clone(),
-        tpu_manager,
+        tpu_manager.clone(),
         &duration,
         *quotes_per_second,
         *priority_fees_proba,
@@ -214,8 +226,7 @@ pub async fn main() -> anyhow::Result<()> {
 
     info!("Number of MM threads {}", mm_tasks.len());
     drop(tx_record_sx);
-    let mut tasks = vec![];
-    tasks.push(blockhash_thread);
+    let mut tasks = vec![blockhash_thread];
 
     let (tx_status_sx, tx_status_rx) = tokio::sync::broadcast::channel(1000000);
     let (block_status_sx, block_status_rx) = tokio::sync::broadcast::channel(1000000);
@@ -231,13 +242,12 @@ pub async fn main() -> anyhow::Result<()> {
     );
     tasks.append(&mut writers_jh);
 
-    let mut confirmation_threads = confirmations_by_blocks(
-        nb_rpc_client,
+    let mut confirmation_threads = confirmation_by_lite_rpc_notification_stream(
         tx_record_rx,
+        notif_rx,
         tx_status_sx,
         block_status_sx,
-        from_slot,
-        exit_signal.clone(),
+        exit_signal.clone()
     );
     tasks.append(&mut confirmation_threads);
 
@@ -264,12 +274,30 @@ pub async fn main() -> anyhow::Result<()> {
     // we start stopping all other process
     // some processes like confirmation of transactions will take some time and will get additional 2 minutes
     // to confirm remaining transactions
-    futures::future::join_all(mm_tasks).await;
-    info!("finished market making, joining all other services");
-    println!("finished market making, joining all other services");
-    exit_signal.store(true, Ordering::Relaxed);
+    let market_makers_wait_task = {
+        let exit_signal = exit_signal.clone();
+        tokio::spawn(async move {
+            futures::future::join_all(mm_tasks).await;
+            info!("finished market making, joining all other services");
+            exit_signal.store(true, Ordering::Relaxed);
+        })
+    };
 
-    futures::future::join_all(tasks).await;
+    let other_tasks_wait_task = {
+        let tpu_manager = tpu_manager.clone();
+        tokio::spawn(async move {
+            futures::future::join_all(tasks).await;
+            info!("finished joining all other services, joining TransactionService");
+            tpu_manager.stop();
+        })
+    };
+
+    let transaction_service = tokio::spawn(async move {
+        let _ = tx_service_jh.await;
+        info!("Transaction service joined");
+    });
+
+    futures::future::join_all([market_makers_wait_task, other_tasks_wait_task, transaction_service]).await;
     mango_sim_stats.report(true, METRICS_NAME).await;
     Ok(())
 }

@@ -107,10 +107,7 @@ pub fn start(
                 };
 
                 let tpu_manager = tpu_manager.clone();
-                tokio::spawn(async move {
-                    let ok = tpu_manager.send_transaction(&tx, tx_send_record).await;
-                    trace!("send tx={:?} ok={ok}", tx.signatures[0]);
-                });
+                tpu_manager.send_transaction(&tx, tx_send_record).await;
             }
         }
     });
