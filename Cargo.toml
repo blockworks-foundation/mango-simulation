@@ -49,8 +49,8 @@ solana-logger = "1.15.2"
 solana-transaction-status = "1.15.2"
 solana-account-decoder = "1.15.2"
 
-solana-lite-rpc-core = { path = "/home/galactus/mangolana/lite-rpc/core" }
-solana-lite-rpc-services = { path = "/home/galactus/mangolana/lite-rpc/services" }
+solana-lite-rpc-core = { git = "https://github.com/blockworks-foundation/lite-rpc.git", branch = "mango_simulation_test" }
+solana-lite-rpc-services = { git = "https://github.com/blockworks-foundation/lite-rpc.git", branch = "mango_simulation_test" }
 
 
 # pin program to mango-v3 version of solana sdk

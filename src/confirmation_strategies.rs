@@ -170,6 +170,8 @@ pub fn confirmation_by_lite_rpc_notification_stream(
         tokio::spawn(async move {
             let mut tx_record_rx = tx_record_rx;
             let mut notification_stream = notification_stream;
+            
+            #[allow(unused_assignments)]
             let mut remove_tx = None;
             while !transaction_map.is_empty() || !exit_signal.load(Ordering::Relaxed) {
                 tokio::select! {

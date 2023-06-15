@@ -5777,6 +5777,7 @@ dependencies = [
 [[package]]
 name = "solana-lite-rpc-core"
 version = "0.2.0"
+source = "git+https://github.com/blockworks-foundation/lite-rpc.git?branch=mango_simulation_test#ddd9f95a4d23972a4a49ea4db0086030bb7d6a72"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5808,6 +5809,7 @@ dependencies = [
 [[package]]
 name = "solana-lite-rpc-services"
 version = "0.2.0"
+source = "git+https://github.com/blockworks-foundation/lite-rpc.git?branch=mango_simulation_test#ddd9f95a4d23972a4a49ea4db0086030bb7d6a72"
 dependencies = [
  "anyhow",
  "async-channel",
