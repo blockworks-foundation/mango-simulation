@@ -171,8 +171,6 @@ pub fn confirmation_by_lite_rpc_notification_stream(
             let mut tx_record_rx = tx_record_rx;
             let mut notification_stream = notification_stream;
             
-            #[allow(unused_assignments)]
-            let mut remove_tx = None;
             while !transaction_map.is_empty() || !exit_signal.load(Ordering::Relaxed) {
                 tokio::select! {
                     transaction_record = tx_record_rx.recv() => {
@@ -184,7 +182,6 @@ pub fn confirmation_by_lite_rpc_notification_stream(
                     },
                     notification = notification_stream.recv() => {
                         if let Some(notification) = notification {
-                            remove_tx = None;
                             
                             match notification {
                                 NotificationMsg::BlockNotificationMsg(block_notification) => {
@@ -209,9 +206,8 @@ pub fn confirmation_by_lite_rpc_notification_stream(
                                                 },
                                                 _ => None
                                             };
-                                            remove_tx = Some(tx_notification.signature.clone());
                                             let _ = tx_confirm_records.send(TransactionConfirmRecord {
-                                                signature: tx_notification.signature,
+                                                signature: tx_notification.signature.clone(),
                                                 confirmed_slot: Some(tx_notification.slot),
                                                 confirmed_at: Some(Utc::now().to_string()),
                                                 sent_at: tx_sent_record.sent_at.to_string(),
@@ -228,15 +224,13 @@ pub fn confirmation_by_lite_rpc_notification_stream(
                                                 priority_fees: tx_sent_record.priority_fees,
                                             });
                                         }
+
+                                        transaction_map.remove(&tx_notification.signature);
                                     }
                                 },
                                 _ => {
                                     // others do nothing
                                 }
-                            }
-
-                            if let Some(signature) = &remove_tx {
-                                transaction_map.remove(signature);
                             }
                         }
                     },
