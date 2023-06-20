@@ -25,13 +25,11 @@ fixed-macro = "^1.1.1"
 futures = "0.3.28"
 iter_tools = "0.1.4"
 log = "0.4.14"
-multiqueue = "^0.3.2"
 rand = ">=0.8.5"
 rayon = "1.5.1"
 serde = "1.0.136"
 serde_derive = "1.0.103"
 serde_json = "1.0.79"
-serde_yaml = "0.8.23"
 thiserror = "1.0"
 tokio = { version = "1.14.1", features = ["full"] }
 regex = "1.7.3"
@@ -49,8 +47,8 @@ solana-logger = "1.15.2"
 solana-transaction-status = "1.15.2"
 solana-account-decoder = "1.15.2"
 
-solana-lite-rpc-core = { git = "https://github.com/blockworks-foundation/lite-rpc.git", branch = "mango_simulation_test" }
-solana-lite-rpc-services = { git = "https://github.com/blockworks-foundation/lite-rpc.git", branch = "mango_simulation_test" }
+solana-lite-rpc-core = { git = "https://github.com/blockworks-foundation/lite-rpc.git", tag = "v0.2.1" }
+solana-lite-rpc-services = { git = "https://github.com/blockworks-foundation/lite-rpc.git", tag = "v0.2.1" }
 
 
 # pin program to mango-v3 version of solana sdk
