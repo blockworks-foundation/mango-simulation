@@ -47,8 +47,8 @@ solana-logger = "1.15.2"
 solana-transaction-status = "1.15.2"
 solana-account-decoder = "1.15.2"
 
-solana-lite-rpc-core = { git = "https://github.com/blockworks-foundation/lite-rpc.git", tag = "v0.2.1" }
-solana-lite-rpc-services = { git = "https://github.com/blockworks-foundation/lite-rpc.git", tag = "v0.2.1" }
+solana-lite-rpc-core = { git = "https://github.com/blockworks-foundation/lite-rpc.git", tag = "v0.2.2" }
+solana-lite-rpc-services = { git = "https://github.com/blockworks-foundation/lite-rpc.git", tag = "v0.2.2" }
 
 
 # pin program to mango-v3 version of solana sdk

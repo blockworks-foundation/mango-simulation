@@ -63,8 +63,4 @@ impl TpuManager {
         }
         value
     }
-
-    pub fn stop(&self) {
-        self.transaction_service.stop();
-    }
 }

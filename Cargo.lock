@@ -5690,7 +5690,7 @@ dependencies = [
 [[package]]
 name = "solana-lite-rpc-core"
 version = "0.2.1"
-source = "git+https://github.com/blockworks-foundation/lite-rpc.git?tag=v0.2.1#c1eed987f29417f8a3b8d147f43a112388f02e4f"
+source = "git+https://github.com/blockworks-foundation/lite-rpc.git?tag=v0.2.2#b2a15ad913128e2266deed8b41a4c0c1c640aacc"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5722,7 +5722,7 @@ dependencies = [
 [[package]]
 name = "solana-lite-rpc-services"
 version = "0.2.1"
-source = "git+https://github.com/blockworks-foundation/lite-rpc.git?tag=v0.2.1#c1eed987f29417f8a3b8d147f43a112388f02e4f"
+source = "git+https://github.com/blockworks-foundation/lite-rpc.git?tag=v0.2.2#b2a15ad913128e2266deed8b41a4c0c1c640aacc"
 dependencies = [
  "anyhow",
  "async-channel",
