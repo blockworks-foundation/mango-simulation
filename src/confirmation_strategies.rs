@@ -161,7 +161,8 @@ pub fn confirmation_by_lite_rpc_notification_stream(
     tx_block_data: tokio::sync::broadcast::Sender<BlockData>,
     exit_signal: Arc<AtomicBool>,
 ) -> Vec<JoinHandle<()>> {
-    let transaction_map: Arc<DashMap<String, (TransactionSendRecord, Instant)>> = Arc::new(DashMap::new());
+    let transaction_map: Arc<DashMap<String, (TransactionSendRecord, Instant)>> =
+        Arc::new(DashMap::new());
 
     let confirming_task = {
         let transaction_map = transaction_map.clone();
@@ -170,7 +171,7 @@ pub fn confirmation_by_lite_rpc_notification_stream(
         tokio::spawn(async move {
             let mut tx_record_rx = tx_record_rx;
             let mut notification_stream = notification_stream;
-            
+
             while !transaction_map.is_empty() || !exit_signal.load(Ordering::Relaxed) {
                 tokio::select! {
                     transaction_record = tx_record_rx.recv() => {
@@ -182,7 +183,7 @@ pub fn confirmation_by_lite_rpc_notification_stream(
                     },
                     notification = notification_stream.recv() => {
                         if let Some(notification) = notification {
-                            
+
                             match notification {
                                 NotificationMsg::BlockNotificationMsg(block_notification) => {
                                     let _ = tx_block_data.send(BlockData {

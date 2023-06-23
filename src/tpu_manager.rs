@@ -1,6 +1,6 @@
 use log::warn;
 use solana_client::connection_cache::ConnectionCache;
-use solana_lite_rpc_services::{transaction_service::{TransactionService}};
+use solana_lite_rpc_services::transaction_service::TransactionService;
 use solana_sdk::transaction::Transaction;
 
 use tokio::sync::mpsc::UnboundedSender;
@@ -22,7 +22,6 @@ impl TpuManager {
         stats: MangoSimulationStats,
         tx_send_record: UnboundedSender<TransactionSendRecord>,
     ) -> anyhow::Result<Self> {
-
         Ok(Self {
             transaction_service,
             stats,
@@ -49,7 +48,8 @@ impl TpuManager {
         let transaction = bincode::serialize(transaction).unwrap();
 
         self.transaction_service
-            .send_transaction(transaction, None).await
+            .send_transaction(transaction, None)
+            .await
             .is_ok()
     }
 
