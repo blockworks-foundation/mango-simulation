@@ -102,4 +102,5 @@ pub struct BlockData {
     pub number_of_mm_transactions: u64,
     pub block_time: u64,
     pub cu_consumed: u64,
+    pub cu_consumed_by_simulations: u64,
 }

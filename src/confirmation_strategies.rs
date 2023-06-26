@@ -193,7 +193,8 @@ pub fn confirmation_by_lite_rpc_notification_stream(
                                         block_time: block_notification.block_time,
                                         number_of_mm_transactions: block_notification.transaction_found,
                                         total_transactions: block_notification.total_transactions,
-                                        cu_consumed: block_notification.cu_consumed_by_txs,
+                                        cu_consumed: block_notification.total_cu_consumed,
+                                        cu_consumed_by_simulations: block_notification.cu_consumed_by_txs,
                                     });
                                 }
                                 NotificationMsg::UpdateTransactionMsg(tx_update_notifications) => {
