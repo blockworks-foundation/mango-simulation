@@ -1,0 +1,13 @@
+{
+  "pubkey": "MangoCzJ36AjZyKwVj3VnYU4GTonjfVEnJmvvWaxLac",
+  "account": {
+    "lamports": 2951730457,
+    "data": [
+      "AAAAAAtrwmw9oIkyCiWWCwghgfcii0hdoI/YwMv3ysQDw2Rnv7V4NXnDEQAGAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "base64"
+    ],
+    "owner": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "executable": false,
+    "rentEpoch": 354
+  }
+}

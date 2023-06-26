@@ -1,41 +1,48 @@
 # Mango Simulation - test solana cluster by simulating mango markets
 
-This project is use to stress a solana cluster like devnet, testnet or local solana cluster by simulating mango markets. This code requires ids.json which describe mango group for a cluster and accounts.json file which has preconfigured user accounts in mango.
+This project is use to stress a solana cluster like devnet, testnet or local
+solana cluster by simulating mango markets. This code requires ids.json which
+describe mango group for a cluster and accounts.json file which has
+preconfigured user accounts in mango.
 
-To create a new configuration for mango for your cluster please check the following project:
-<https://github.com/godmodegalactus/configure_mango>
+The code then will create transaction request (q) requests per seconds for (n)
+seconds per perp market perp user. Each transaction request will contains remove
+following instruction CancelAllPerpOrders and two PlacePerpOrder (one for bid
+and another for ask).
 
-The code then will create transaction request (q) requests per seconds for (n) seconds per perp market perp user. Each transaction request will contains remove following instruction CancelAllPerpOrders and two PlacePerpOrder (one for bid and another for ask).
-
-For the best results to avoid limits by quic it is better to fill the argument "identity" of a valid staked validator for the cluster you are testing with.
+For the best results to avoid limits by quic it is better to fill the argument
+"identity" of a valid staked validator for the cluster you are testing with.
 
 ## Build
 
-Install configure-mango
-```sh
-git clone https://github.com/godmodegalactus/configure_mango.git
-cd configure_mango
-yarn install
-sh scripts/configure_local.sh
-
-# open a new terminal as the previous one will continue running a solana validator
-# this command will hang for around a minute, just wait for it to finish
-NB_USERS=50 yarn ts-node index.ts
-
-```
-
-Install mango-simulation
 ```sh
 git clone https://github.com/blockworks-foundation/mango-simulation.git
 cd mango-simulation
-cargo build
+cargo build --release
+```
 
-# copy over files from configure_mango while you wait for the build to finish
-mkdir -p localnet
-cp ../configure_mango/ids.json localnet
-cp ../configure_mango/accounts.json localnet
-cp ../configure_mango/authority.json localnet
-cp ../configure_mango/config/validator-identity.json localnet
+## Configure cluster
+
+Install all nodejs dependencies
+
+```sh
+yarn install
+```
+
+To start a local cluster. This will start a validator with all the data in
+config directory.
+
+```sh
+sh configure_cluster/scripts/configure_local.sh
+```
+
+To create a configuration. This will create two files `ids.json` which contain
+cluster information and `account.json` which contains user information.
+
+```sh
+# open a new terminal as the previous one will continue running a solana validator
+# this command will hang for around a minute, just wait for it to finish
+NB_USERS=50 yarn ts-node configure_cluster/configure_mango_v3.ts
 ```
 
 ## Run
@@ -43,7 +50,7 @@ cp ../configure_mango/config/validator-identity.json localnet
 
 To run against your local validator:
 ```sh
-cargo run --bin mango-simulation -- -u http://127.0.0.1:8899 --identity localnet/validator-identity.json --keeper-authority localnet/authority.json --accounts localnet/accounts.json  --mango localnet/ids.json --mango-cluster localnet --duration 10 -q 2 --transaction-save-file tlog.csv --block-data-save-file blog.csv
+cargo run --bin mango-simulation -- -u http://127.0.0.1:8899 --identity config/validator-identity.json --keeper-authority authority.json --accounts accounts.json  --mango ids.json --mango-cluster localnet --duration 10 -q 2 --transaction-save-file tlog.csv --block-data-save-file blog.csv
 ```
 
 You can also run the simulation against testnet, but you will need to run configure_mango 
