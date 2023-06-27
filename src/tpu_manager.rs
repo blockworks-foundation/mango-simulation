@@ -47,10 +47,15 @@ impl TpuManager {
         }
         let transaction = bincode::serialize(transaction).unwrap();
 
-        self.transaction_service
+        let res = self.transaction_service
             .send_transaction(transaction, None)
-            .await
-            .is_ok()
+            .await;
+
+        if let Err(e) = &res{
+            print!("error sending txs on custom tpu {e:?}");
+        }
+        res.is_ok()
+            
     }
 
     pub async fn send_transaction_batch(

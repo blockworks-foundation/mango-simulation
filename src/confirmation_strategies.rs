@@ -186,6 +186,9 @@ pub fn confirmation_by_lite_rpc_notification_stream(
 
                             match notification {
                                 NotificationMsg::BlockNotificationMsg(block_notification) => {
+                                    if block_notification.commitment != CommitmentLevel::Finalized {
+                                        continue;
+                                    }
                                     let _ = tx_block_data.send(BlockData {
                                         block_hash: block_notification.blockhash.to_string(),
                                         block_leader: block_notification.block_leader,
@@ -194,12 +197,15 @@ pub fn confirmation_by_lite_rpc_notification_stream(
                                         number_of_mm_transactions: block_notification.transaction_found,
                                         total_transactions: block_notification.total_transactions,
                                         cu_consumed: block_notification.total_cu_consumed,
-                                        cu_consumed_by_simulations: block_notification.cu_consumed_by_txs,
                                     });
                                 }
                                 NotificationMsg::UpdateTransactionMsg(tx_update_notifications) => {
 
                                     for tx_notification in tx_update_notifications {
+                                        if tx_notification.commitment != CommitmentLevel::Finalized {
+                                            continue;
+                                        }
+                                        
                                         if let Some(value) = transaction_map.get(&tx_notification.signature) {
                                             let (tx_sent_record, _) = value.clone();
                                             let error = match &tx_notification.transaction_status {

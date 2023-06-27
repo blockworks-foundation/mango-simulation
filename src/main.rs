@@ -153,13 +153,14 @@ pub async fn main() -> anyhow::Result<()> {
 
     let nb_rpc_client = Arc::new(NbRpcClient::new_with_commitment(
         json_rpc_url.to_string(),
-        CommitmentConfig::confirmed(),
+        CommitmentConfig::finalized(),
     ));
 
     let tx_store = empty_tx_store();
     let block_store = BlockStore::new(&nb_rpc_client)
         .await
         .expect("Blockstore should be created");
+
     let (notif_sx, notif_rx) = unbounded_channel();
     let (transaction_service, tx_service_jh) = configure_transaction_service(
         nb_rpc_client.clone(),
