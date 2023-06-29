@@ -32,6 +32,7 @@ pub async fn process_blocks(
     tx_block_data: Sender<BlockData>,
     transaction_map: Arc<DashMap<Signature, (TransactionSendRecord, Instant)>>,
     slot: u64,
+    commitment: CommitmentLevel,
 ) {
     let mut mm_transaction_count: u64 = 0;
     let rewards = block.rewards.as_ref().unwrap();
@@ -123,9 +124,11 @@ pub async fn process_blocks(
                 } else {
                     0
                 },
-                number_of_mm_transactions: mm_transaction_count,
+                number_of_mango_simulation_txs: mm_transaction_count,
                 total_transactions: nb_transactions as u64,
-                cu_consumed: cu_consumed,
+                cu_consumed: 0,
+                cu_consumed_by_mango_simulations: cu_consumed,
+                commitment,
             });
         }
     }
@@ -194,9 +197,11 @@ pub fn confirmation_by_lite_rpc_notification_stream(
                                         block_leader: block_notification.block_leader,
                                         block_slot: block_notification.slot,
                                         block_time: block_notification.block_time,
-                                        number_of_mm_transactions: block_notification.transaction_found,
+                                        number_of_mango_simulation_txs: block_notification.transaction_found,
                                         total_transactions: block_notification.total_transactions,
                                         cu_consumed: block_notification.total_cu_consumed,
+                                        cu_consumed_by_mango_simulations: block_notification.cu_consumed_by_txs,
+                                        commitment: block_notification.commitment,
                                     });
                                 }
                                 NotificationMsg::UpdateTransactionMsg(tx_update_notifications) => {
@@ -306,6 +311,7 @@ pub fn confirmation_by_lite_rpc_notification_stream(
     vec![confirming_task, cleaner_jh]
 }
 
+#[deprecated]
 pub fn confirmations_by_blocks(
     client: Arc<RpcClient>,
     mut tx_record_rx: UnboundedReceiver<TransactionSendRecord>,
@@ -462,6 +468,7 @@ pub fn confirmations_by_blocks(
                         tx_block_data,
                         transaction_map,
                         block_slot.1,
+                        commitment_confirmation.commitment,
                     )
                     .await;
                 }
