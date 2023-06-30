@@ -11,7 +11,7 @@ pub struct Config {
     pub entrypoint_addr: SocketAddr,
     pub json_rpc_url: String,
     pub websocket_url: String,
-    pub id: Keypair,
+    pub identity: Keypair,
     pub duration: Duration,
     pub quotes_per_second: u64,
     pub account_keys: String,
@@ -32,7 +32,7 @@ impl Default for Config {
             entrypoint_addr: SocketAddr::from(([127, 0, 0, 1], 8001)),
             json_rpc_url: ConfigInput::default().json_rpc_url,
             websocket_url: ConfigInput::default().websocket_url,
-            id: Keypair::new(),
+            identity: Keypair::new(),
             duration: Duration::new(std::u64::MAX, 0),
             quotes_per_second: 1,
             account_keys: String::new(),
@@ -249,7 +249,7 @@ pub fn extract_args(matches: &ArgMatches) -> Config {
         &config.keypair_path,
     );
     if let Ok(id) = read_keypair_file(id_path) {
-        args.id = id;
+        args.identity = id;
     } else if matches.is_present("identity") {
         panic!("could not parse identity path");
     }

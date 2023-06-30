@@ -3,7 +3,7 @@ use fixed::types::I80F48;
 use mango::state::PerpMarket;
 use serde::Serialize;
 use solana_program::{pubkey::Pubkey, slot_history::Slot};
-use solana_sdk::signature::Signature;
+use solana_sdk::{signature::Signature, commitment_config::CommitmentLevel};
 use std::fmt;
 
 #[derive(Clone, Debug, Serialize)]
@@ -99,7 +99,9 @@ pub struct BlockData {
     pub block_slot: Slot,
     pub block_leader: String,
     pub total_transactions: u64,
-    pub number_of_mm_transactions: u64,
+    pub number_of_mango_simulation_txs: u64,
     pub block_time: u64,
     pub cu_consumed: u64,
+    pub cu_consumed_by_mango_simulations: u64,
+    pub commitment: CommitmentLevel,
 }

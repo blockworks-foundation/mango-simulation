@@ -1,16 +1,17 @@
 use std::{
+    collections::HashMap,
     sync::Mutex,
     sync::{
         atomic::{AtomicU64, Ordering},
         Arc,
     },
-    time::Instant, collections::HashMap,
+    time::Instant,
 };
 
 use crate::states::{KeeperInstruction, TransactionConfirmRecord};
 use iter_tools::Itertools;
 use solana_metrics::datapoint_info;
-use tokio::{task::JoinHandle, sync::RwLock};
+use tokio::{sync::RwLock, task::JoinHandle};
 
 // Non atomic version of counters
 #[derive(Clone, Default, Debug)]
@@ -49,7 +50,7 @@ impl NACounters {
     pub fn diff(&self, other: &NACounters) -> NACounters {
         let mut new_error_count = HashMap::new();
         for (error, count) in &self.errors {
-            if let Some(v) = other.errors.get( error ) {
+            if let Some(v) = other.errors.get(error) {
                 new_error_count.insert(error.clone(), *count - *v);
             } else {
                 new_error_count.insert(error.clone(), *count);
@@ -383,7 +384,13 @@ impl MangoSimulationStats {
                 .checked_div(counters.num_sent)
                 .unwrap_or(0)
         );
-        let top_5_errors = counters.errors.iter().sorted_by(|x,y| {(*y.1).cmp(x.1)}).take(5).enumerate().collect_vec();
+        let top_5_errors = counters
+            .errors
+            .iter()
+            .sorted_by(|x, y| (*y.1).cmp(x.1))
+            .take(5)
+            .enumerate()
+            .collect_vec();
         let mut errors_to_print: String = String::new();
         for (idx, (error, count)) in top_5_errors {
             println!("Error #{idx} : {error} ({count})");
@@ -489,11 +496,7 @@ impl MangoSimulationStats {
                     diff.succ_update_funding_txs,
                     i64
                 ),
-                (
-                    "top_5_errors",
-                    errors_to_print,
-                    String
-                )
+                ("top_5_errors", errors_to_print, String)
             );
         }
     }
