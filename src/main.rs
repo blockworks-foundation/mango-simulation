@@ -206,9 +206,7 @@ pub async fn main() -> anyhow::Result<()> {
         account_keys_parsed.len(),
         number_of_markers_per_mm,
         quotes_per_second,
-        account_keys_parsed.len()
-            * number_of_markers_per_mm as usize
-            * *quotes_per_second as usize,
+        account_keys_parsed.len() * number_of_markers_per_mm as usize * *quotes_per_second as usize,
         duration
     );
 

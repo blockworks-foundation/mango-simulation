@@ -30,9 +30,9 @@ pub fn initialize_result_writers(
                 File::create(block_data_save_file).await.unwrap(),
             );
             let mut block_data = block_data;
-                while let Ok(record) = block_data.recv().await {
-                    writer.serialize(record).await.unwrap();
-                } 
+            while let Ok(record) = block_data.recv().await {
+                writer.serialize(record).await.unwrap();
+            }
             writer.flush().await.unwrap();
         });
         tasks.push(block_data_jh);

@@ -64,7 +64,9 @@ pub async fn process_blocks(
                 };
                 // add CU in counter
                 if let Some(meta) = &meta {
-                    if let solana_transaction_status::option_serializer::OptionSerializer::Some(x) = meta.compute_units_consumed {
+                    if let solana_transaction_status::option_serializer::OptionSerializer::Some(x) =
+                        meta.compute_units_consumed
+                    {
                         cu_consumed = cu_consumed.saturating_add(x);
                     }
                 }
@@ -204,7 +206,7 @@ pub fn confirmation_by_lite_rpc_notification_stream(
                                         if tx_notification.commitment != CommitmentLevel::Finalized {
                                             continue;
                                         }
-                                        
+
                                         if let Some(value) = transaction_map.get(&tx_notification.signature) {
                                             let (tx_sent_record, _) = value.clone();
                                             let error = match &tx_notification.transaction_status {
