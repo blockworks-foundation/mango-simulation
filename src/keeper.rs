@@ -131,7 +131,7 @@ pub fn prepare_transaction(
         priority_fees: prioritization_fee,
         keeper_instruction: Some(keeper_instruction),
     };
-    return (tx, tx_send_record);
+    (tx, tx_send_record)
 }
 
 pub fn create_update_and_cache_quote_banks(
@@ -161,6 +161,7 @@ pub fn create_update_and_cache_quote_banks(
     vec![to_sdk_instruction(ix_update), to_sdk_instruction(ix_cache)]
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn start_keepers(
     exit_signal: Arc<AtomicBool>,
     tpu_manager: TpuManager,

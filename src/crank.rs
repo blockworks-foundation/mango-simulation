@@ -36,6 +36,7 @@ pub struct KeeperConfig {
     pub websocket_url: String,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn start(
     config: KeeperConfig,
     exit_signal: Arc<AtomicBool>,

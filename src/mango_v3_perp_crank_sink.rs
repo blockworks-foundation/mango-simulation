@@ -45,7 +45,7 @@ impl MangoV3PerpCrankSink {
         Self {
             mkt_pks_by_evq_pks: pks
                 .iter()
-                .map(|(mkt_pk, evq_pk)| (evq_pk.clone(), mkt_pk.clone()))
+                .map(|(mkt_pk, evq_pk)| (*evq_pk, *mkt_pk))
                 .collect(),
             group_pk,
             cache_pk,
@@ -73,7 +73,7 @@ impl AccountWriteSink for MangoV3PerpCrankSink {
             const HEADER_SIZE: usize = size_of::<EventQueueHeader>();
             let header_data = array_ref![account.data(), 0, HEADER_SIZE];
             let header = RefCell::<EventQueueHeader>::new(*bytemuck::from_bytes(header_data));
-            let seq_num = header.clone().into_inner().seq_num.clone();
+            let seq_num = header.clone().into_inner().seq_num;
             // trace!("evq {} seq_num {}", mkt.name, header.seq_num);
 
             const QUEUE_SIZE: usize = EVENT_SIZE * QUEUE_LEN;
@@ -87,8 +87,7 @@ impl AccountWriteSink for MangoV3PerpCrankSink {
             // only crank if at least 1 fill or a sufficient events of other categories are buffered
             let contains_fill_events = event_queue
                 .iter()
-                .find(|e| e.event_type == EventType::Fill as u8)
-                .is_some();
+                .any(|e| e.event_type == EventType::Fill as u8);
             let len = event_queue.iter().count();
             let has_backlog = len > MAX_BACKLOG;
             debug!("evq {pk:?} seq_num={seq_num} len={len} contains_fill_events={contains_fill_events} has_backlog={has_backlog}");
@@ -121,7 +120,7 @@ impl AccountWriteSink for MangoV3PerpCrankSink {
             let mkt_pk = self
                 .mkt_pks_by_evq_pks
                 .get(&pk)
-                .expect(&format!("{pk:?} is a known public key"));
+                .unwrap_or_else(|| panic!("{pk:?} is a known public key"));
 
             let ix = to_sdk_instruction(
                 consume_events(
@@ -130,16 +129,13 @@ impl AccountWriteSink for MangoV3PerpCrankSink {
                     &to_sp_pk(&self.cache_pk),
                     &to_sp_pk(mkt_pk),
                     &to_sp_pk(&pk),
-                    &mut mango_accounts
-                        .iter()
-                        .map(|pk| pk.clone())
-                        .collect::<Vec<_>>(),
+                    &mut mango_accounts.iter().copied().collect::<Vec<_>>(),
                     MAX_EVENTS_PER_TX,
                 )
                 .unwrap(),
             );
 
-            (Ok(ix), mkt_pk.clone())
+            (Ok(ix), *mkt_pk)
         };
 
         // info!(

@@ -59,19 +59,13 @@ pub async fn process_blocks(
             };
             for signature in &transaction.signatures {
                 let transaction_record_op = {
-                    let rec = transaction_map.get(&signature);
-                    match rec {
-                        Some(x) => Some(x.clone()),
-                        None => None,
-                    }
+                    let rec = transaction_map.get(signature);
+                    rec.map(|x| x.clone())
                 };
                 // add CU in counter
                 if let Some(meta) = &meta {
-                    match meta.compute_units_consumed {
-                        solana_transaction_status::option_serializer::OptionSerializer::Some(x) => {
-                            cu_consumed = cu_consumed.saturating_add(x);
-                        }
-                        _ => {}
+                    if let solana_transaction_status::option_serializer::OptionSerializer::Some(x) = meta.compute_units_consumed {
+                        cu_consumed = cu_consumed.saturating_add(x);
                     }
                 }
                 if let Some(transaction_record) = transaction_record_op {
@@ -110,7 +104,7 @@ pub async fn process_blocks(
                     }
                 }
 
-                transaction_map.remove(&signature);
+                transaction_map.remove(signature);
             }
         }
         // push block data
@@ -258,9 +252,9 @@ pub fn confirmation_by_lite_rpc_notification_stream(
     };
 
     let cleaner_jh = {
-        let transaction_map = transaction_map.clone();
-        let exit_signal = exit_signal.clone();
-        let tx_confirm_records = tx_confirm_records.clone();
+        let transaction_map = transaction_map;
+        let exit_signal = exit_signal;
+        let tx_confirm_records = tx_confirm_records;
         tokio::spawn(async move {
             loop {
                 tokio::time::sleep(Duration::from_secs(60)).await;
@@ -391,7 +385,7 @@ pub fn confirmations_by_blocks(
                                 timed_out: true,
                                 priority_fees: sent_record.priority_fees,
                             });
-                            to_remove.push(signature.clone());
+                            to_remove.push(*signature);
                         }
                     }
 
@@ -409,7 +403,7 @@ pub fn confirmations_by_blocks(
     };
 
     let block_confirmation_jh = {
-        let exit_signal = exit_signal.clone();
+        let exit_signal = exit_signal;
         tokio::spawn(async move {
             let mut start_block = from_slot;
             let mut start_instant = tokio::time::Instant::now();

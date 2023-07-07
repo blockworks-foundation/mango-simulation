@@ -191,57 +191,53 @@ impl MangoSimulationStats {
         let regex = regex::Regex::new(r"Error processing Instruction \d+: ").unwrap();
         tokio::spawn(async move {
             let mut tx_confirm_record_reciever = tx_confirm_record_reciever;
-            loop {
-                if let Ok(tx_data) = tx_confirm_record_reciever.recv().await {
-                    if let Some(_) = tx_data.confirmed_at {
-                        counters.num_confirmed_txs.fetch_add(1, Ordering::Relaxed);
-                        if let Some(error) = tx_data.error {
-                            let error = regex.replace_all(&error, "").to_string();
-                            counters.num_error_txs.fetch_add(1, Ordering::Relaxed);
-                            let mut lock = counters.errors.write().await;
-                            if let Some(value) = lock.get_mut(&error) {
-                                *value += 1;
-                            } else {
-                                lock.insert(error, 1);
-                            }
+            while let Ok(tx_data) = tx_confirm_record_reciever.recv().await {
+                if tx_data.confirmed_at.is_some() {
+                    counters.num_confirmed_txs.fetch_add(1, Ordering::Relaxed);
+                    if let Some(error) = tx_data.error {
+                        let error = regex.replace_all(&error, "").to_string();
+                        counters.num_error_txs.fetch_add(1, Ordering::Relaxed);
+                        let mut lock = counters.errors.write().await;
+                        if let Some(value) = lock.get_mut(&error) {
+                            *value += 1;
                         } else {
-                            counters.num_successful.fetch_add(1, Ordering::Relaxed);
-
-                            if let Some(keeper_instruction) = tx_data.keeper_instruction {
-                                match keeper_instruction {
-                                    KeeperInstruction::CachePrice => counters
-                                        .succ_cache_price_txs
-                                        .fetch_add(1, Ordering::Relaxed),
-                                    KeeperInstruction::CacheRootBanks => counters
-                                        .succ_cache_root_banks_txs
-                                        .fetch_add(1, Ordering::Relaxed),
-                                    KeeperInstruction::ConsumeEvents => counters
-                                        .succ_consume_events_txs
-                                        .fetch_add(1, Ordering::Relaxed),
-                                    KeeperInstruction::UpdateAndCacheQuoteRootBank => counters
-                                        .succ_update_and_cache_quote_bank_txs
-                                        .fetch_add(1, Ordering::Relaxed),
-                                    KeeperInstruction::UpdateFunding => counters
-                                        .succ_update_funding_txs
-                                        .fetch_add(1, Ordering::Relaxed),
-                                    KeeperInstruction::UpdatePerpCache => counters
-                                        .succ_update_perp_cache_txs
-                                        .fetch_add(1, Ordering::Relaxed),
-                                    KeeperInstruction::UpdateRootBanks => counters
-                                        .succ_update_root_banks_txs
-                                        .fetch_add(1, Ordering::Relaxed),
-                                };
-                            } else {
-                                counters
-                                    .succ_market_makers_txs
-                                    .fetch_add(1, Ordering::Relaxed);
-                            }
+                            lock.insert(error, 1);
                         }
                     } else {
-                        counters.num_timeout_txs.fetch_add(1, Ordering::Relaxed);
+                        counters.num_successful.fetch_add(1, Ordering::Relaxed);
+
+                        if let Some(keeper_instruction) = tx_data.keeper_instruction {
+                            match keeper_instruction {
+                                KeeperInstruction::CachePrice => counters
+                                    .succ_cache_price_txs
+                                    .fetch_add(1, Ordering::Relaxed),
+                                KeeperInstruction::CacheRootBanks => counters
+                                    .succ_cache_root_banks_txs
+                                    .fetch_add(1, Ordering::Relaxed),
+                                KeeperInstruction::ConsumeEvents => counters
+                                    .succ_consume_events_txs
+                                    .fetch_add(1, Ordering::Relaxed),
+                                KeeperInstruction::UpdateAndCacheQuoteRootBank => counters
+                                    .succ_update_and_cache_quote_bank_txs
+                                    .fetch_add(1, Ordering::Relaxed),
+                                KeeperInstruction::UpdateFunding => counters
+                                    .succ_update_funding_txs
+                                    .fetch_add(1, Ordering::Relaxed),
+                                KeeperInstruction::UpdatePerpCache => counters
+                                    .succ_update_perp_cache_txs
+                                    .fetch_add(1, Ordering::Relaxed),
+                                KeeperInstruction::UpdateRootBanks => counters
+                                    .succ_update_root_banks_txs
+                                    .fetch_add(1, Ordering::Relaxed),
+                            };
+                        } else {
+                            counters
+                                .succ_market_makers_txs
+                                .fetch_add(1, Ordering::Relaxed);
+                        }
                     }
                 } else {
-                    break;
+                    counters.num_timeout_txs.fetch_add(1, Ordering::Relaxed);
                 }
             }
         })

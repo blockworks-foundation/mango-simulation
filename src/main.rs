@@ -16,7 +16,6 @@ use {
         stats::MangoSimulationStats,
         tpu_manager::TpuManager,
     },
-    serde_json,
     solana_client::nonblocking::rpc_client::RpcClient as NbRpcClient,
     solana_lite_rpc_core::{
         block_store::BlockStore,
@@ -105,7 +104,8 @@ pub async fn main() -> anyhow::Result<()> {
     solana_logger::setup_with_default("info");
     solana_metrics::set_panic_hook("bench-mango", /*version:*/ None);
 
-    let matches = cli::build_args(solana_version::version!()).get_matches();
+    let version = solana_version::version!();
+    let matches = cli::build_args(version).get_matches();
     let cli_config = cli::extract_args(&matches);
 
     let cli::Config {
@@ -208,7 +208,7 @@ pub async fn main() -> anyhow::Result<()> {
         quotes_per_second,
         account_keys_parsed.len()
             * number_of_markers_per_mm as usize
-            * quotes_per_second.clone() as usize,
+            * *quotes_per_second as usize,
         duration
     );
 
@@ -221,7 +221,6 @@ pub async fn main() -> anyhow::Result<()> {
     let quote_root_bank =
         Pubkey::from_str(mango_group_config.tokens.last().unwrap().root_key.as_str())
             .expect("Quote root bank should be able to convert into pubkey");
-    ();
     let quote_node_banks = mango_group_config
         .tokens
         .last()
@@ -287,7 +286,7 @@ pub async fn main() -> anyhow::Result<()> {
         blockhash.clone(),
         current_slot.clone(),
         tpu_manager.clone(),
-        &duration,
+        duration,
         *quotes_per_second,
         *priority_fees_proba,
         number_of_markers_per_mm,

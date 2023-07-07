@@ -50,7 +50,7 @@ impl Default for Config {
 }
 
 /// Defines and builds the CLI args for a run of the benchmark
-pub fn build_args<'a, 'b>(version: &'b str) -> App<'a, 'b> {
+pub fn build_args(version: &str) -> App<'_, '_> {
     App::new(crate_name!())
         .about(crate_description!())
         .version(version)
@@ -302,7 +302,7 @@ pub fn extract_args(matches: &ArgMatches) -> Config {
         &config.keypair_path,
     );
 
-    args.keeper_authority = read_keypair_file(kp_auth_path.clone()).ok();
+    args.keeper_authority = read_keypair_file(kp_auth_path).ok();
 
     args.number_of_markers_per_mm = match matches.value_of("markets-per-mm") {
         Some(x) => x
