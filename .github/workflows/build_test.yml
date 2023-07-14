@@ -17,10 +17,11 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
+    # setup rust with stable toolchain
     - name: Set up Rust
       uses: actions-rs/toolchain@v1
       with:
-        profile: minimal
+        toolchain: stable
 
     - name: Build and test
       run: |
