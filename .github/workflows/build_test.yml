@@ -3,10 +3,10 @@ name: Rust Build and Clippy Check
 on:
   pull_request:
     branches:
-      - main 
+      - main
   push:
     branches:
-      - main 
+      - main
 
 jobs:
   build:
@@ -17,11 +17,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    # setup rust with stable toolchain
     - name: Set up Rust
       uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
+
+    - name: Install Clippy
+      run: rustup component add clippy --toolchain stable
 
     - name: Build and test
       run: |
