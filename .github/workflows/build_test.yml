@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  build:
+  build_all:
     name: Rust project - latest
     runs-on: ubuntu-latest
     steps:
