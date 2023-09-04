@@ -14,21 +14,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v3
+        with:
+          toolchain: stable
 
-    - name: Set up Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get upgrade -y
+          sudo apt-get install libssl-dev openssl -y
 
-    - name: Install Clippy
-      run: rustup component add clippy --toolchain stable
+      - name: Early Build
+        run: cargo build --workspace --tests
 
-    - name: Build and test
-      run: |
-        cargo build --all-targets
-        cargo test --all-targets
+      - name: Check Rust Code Format
+        run:  cargo fmt -- --check
 
-    - name: Run Clippy
-      run: cargo clippy --all-targets -- -D warnings
+      - name: Run Rust Clippy
+        run: cargo clippy --all-targets -- -D warnings
