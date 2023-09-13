@@ -42,7 +42,10 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Early Build
-        run: cargo build --workspace --tests
+        run: |
+          rustc --version
+          echo $RUSTFLAGS
+          cargo build --workspace --tests
 
       - name: Run fmt+clippy
         run: |
