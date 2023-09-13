@@ -44,7 +44,6 @@ jobs:
         with:
           path: |
             ~/.cargo/bin/
-            ~/.cache/sscache/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
