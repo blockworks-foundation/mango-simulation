@@ -16,13 +16,12 @@ env:
 
 jobs:
   build_all:
-    name: Rust project - latest
-    runs-on: ubuntu-latest
+    name: Rust project
+    runs-on: ubuntu-22.04
     steps:
       - name: Install Dependencies
         run: |
           sudo apt-get update -y
-          sudo apt-get upgrade -y
           sudo apt-get install libssl-dev openssl -y
 
       - uses: actions/checkout@v4
