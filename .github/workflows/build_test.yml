@@ -13,10 +13,16 @@ jobs:
     name: Rust project - latest
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+
+      # The toolchain action should definitely be run before the cache action
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
+          components: rustfmt, clippy
+          cache: false
+          # avoid the default "-D warnings" which thrashes cache
+          rustflags: ""
 
       - name: Install Dependencies
         run: |
@@ -24,15 +30,21 @@ jobs:
           sudo apt-get upgrade -y
           sudo apt-get install libssl-dev openssl -y
 
-      - name: Install rustfmt
-        run: |
-          rustup component add rustfmt
+      # https://github.com/actions/cache/blob/main/examples.md#rust---cargo
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Early Build
         run: cargo build --workspace --tests
 
-      - name: Check Rust Code Format
-        run:  cargo fmt -- --check
-
-      - name: Run Rust Clippy
-        run: cargo clippy --all-targets -- -D warnings
+      - name: Run fmt+clippy
+        run: |
+          cargo fmt --all --check
+          cargo clippy --workspace --all-targets
