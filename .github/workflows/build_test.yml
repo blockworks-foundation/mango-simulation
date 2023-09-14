@@ -8,15 +8,19 @@ on:
     branches:
       - main
 
+env:
+  SCCACHE_GHA_ENABLED: true
+  RUSTC_WRAPPER: sccache
+  SCCACHE_CACHE_SIZE: "1G"
+
 jobs:
   build_all:
-    name: Rust project - latest
-    runs-on: ubuntu-latest
+    name: Rust project
+    runs-on: ubuntu-22.04
     steps:
-      - name: Install Dependencies
+      - name: Install Linux Packages
         run: |
           sudo apt-get update -y
-          sudo apt-get upgrade -y
           sudo apt-get install libssl-dev openssl -y
 
       - uses: actions/checkout@v4
@@ -26,26 +30,30 @@ jobs:
         with:
           # use toolchain version from rust-toolchain.toml
           components: rustfmt, clippy
-          cache: false
+          cache: true
           # avoid the default "-D warnings" which thrashes cache
           rustflags: ""
 
+
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
+
+
       # https://github.com/actions/cache/blob/main/examples.md#rust---cargo
-      - uses: actions/cache@v3
+      # https://blog.arriven.wtf/posts/rust-ci-cache/
+      - uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
+          # will be covered by sscache
+          cache-targets: false
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+
       - name: Early Build
-        run: cargo build --workspace --tests
+        run: |
+          cargo build --locked --workspace --tests
 
       - name: Run fmt+clippy
         run: |
           cargo fmt --all --check
-          cargo clippy --workspace --all-targets
+          cargo clippy --locked --workspace --all-targets
 
