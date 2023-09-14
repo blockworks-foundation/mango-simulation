@@ -7,7 +7,6 @@ on:
   push:
     branches:
       - main
-      - faster-ci-hacking
 
 env:
   SCCACHE_GHA_ENABLED: true
@@ -19,7 +18,7 @@ jobs:
     name: Rust project
     runs-on: ubuntu-22.04
     steps:
-      - name: Install Dependencies
+      - name: Install Linux Packages
         run: |
           sudo apt-get update -y
           sudo apt-get install libssl-dev openssl -y
@@ -51,7 +50,7 @@ jobs:
 
       - name: Early Build
         run: |
-          cargo build --workspace --tests
+          cargo build --locked --workspace --tests
 
       - name: Run fmt+clippy
         run: |
