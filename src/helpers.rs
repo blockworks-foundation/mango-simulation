@@ -55,7 +55,7 @@ pub fn to_sdk_instruction(
 
 pub async fn load_from_rpc<T: Loadable>(rpc_client: &RpcClient, pk: &Pubkey) -> T {
     let acc = rpc_client.get_account(&to_sdk_pk(pk)).await.unwrap();
-    return T::load_from_bytes(acc.data.as_slice()).unwrap().clone();
+    *T::load_from_bytes(acc.data.as_slice()).unwrap()
 }
 
 pub async fn get_latest_blockhash(rpc_client: &RpcClient) -> Hash {
@@ -116,10 +116,8 @@ pub async fn poll_blockhash_and_slot(
                 *blockhash.write().await = new_blockhash;
             }
             blockhash_last_updated = Instant::now();
-        } else {
-            if blockhash_last_updated.elapsed().as_secs() > 120 {
-                break;
-            }
+        } else if blockhash_last_updated.elapsed().as_secs() > 120 {
+            break;
         }
 
         tokio::time::sleep(Duration::from_millis(100)).await;
@@ -198,7 +196,7 @@ pub async fn get_mango_market_perps_cache(
             order_base_lots,
             price,
             price_quote_lots,
-            mango_program_pk: mango_program_pk.clone(),
+            mango_program_pk: *mango_program_pk,
             mango_group_pk,
             mango_cache_pk,
             perp_market_pk,

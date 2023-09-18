@@ -143,20 +143,19 @@ fn generate_random_fees(
         .map(|_| {
             if prioritization_fee_proba == 0 {
                 0
+            } else if range_probability.sample(&mut rng) <= prioritization_fee_proba {
+                range.sample(&mut rng)
             } else {
-                if range_probability.sample(&mut rng) <= prioritization_fee_proba {
-                    range.sample(&mut rng) as u64
-                } else {
-                    0
-                }
+                0
             }
         })
         .collect()
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn send_mm_transactions(
     quotes_per_second: u64,
-    perp_market_caches: &Vec<PerpMarketCache>,
+    perp_market_caches: &[PerpMarketCache],
     tpu_manager: TpuManager,
     mango_account_pk: Pubkey,
     mango_account_signer: &Keypair,
@@ -179,7 +178,7 @@ pub async fn send_mm_transactions(
             let mut tx = create_ask_bid_transaction(
                 c,
                 mango_account_pk,
-                &mango_account_signer,
+                mango_account_signer,
                 prioritization_fee,
             );
 
@@ -207,6 +206,7 @@ pub async fn send_mm_transactions(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn start_market_making_threads(
     account_keys_parsed: Vec<AccountKeys>,
     perp_market_caches: Vec<PerpMarketCache>,
@@ -226,7 +226,7 @@ pub fn start_market_making_threads(
             let exit_signal = exit_signal.clone();
             let blockhash = blockhash.clone();
             let current_slot = current_slot.clone();
-            let duration = duration.clone();
+            let duration = *duration;
             let perp_market_caches = perp_market_caches.clone();
             let mango_account_pk =
                 Pubkey::from_str(account_keys.mango_account_pks[0].as_str()).unwrap();
@@ -241,7 +241,7 @@ pub fn start_market_making_threads(
             );
             let perp_market_caches = perp_market_caches
                 .choose_multiple(&mut rng, number_of_markers_per_mm as usize)
-                .map(|x| x.clone())
+                .cloned()
                 .collect_vec();
 
             tokio::spawn(async move {
@@ -312,7 +312,7 @@ fn create_cancel_all_orders(
 
 pub async fn clean_market_makers(
     rpc_client: Arc<RpcClient>,
-    account_keys_parsed: &Vec<AccountKeys>,
+    account_keys_parsed: &[AccountKeys],
     perp_market_caches: &Vec<PerpMarketCache>,
     blockhash: Arc<RwLock<Hash>>,
 ) {
@@ -323,11 +323,11 @@ pub async fn clean_market_makers(
         for market_maker in account_keys_parsed {
             let mango_account_pk =
                 Pubkey::from_str(market_maker.mango_account_pks[0].as_str()).unwrap();
+
             for perp_market in perp_market_caches {
                 let market_maker = market_maker.clone();
                 let perp_market = perp_market.clone();
                 let rpc_client = rpc_client.clone();
-                let mango_account_pk = mango_account_pk.clone();
                 let blockhash = blockhash.clone();
 
                 let task = tokio::spawn(async move {

@@ -3,7 +3,7 @@ use fixed::types::I80F48;
 use mango::state::PerpMarket;
 use serde::Serialize;
 use solana_program::{pubkey::Pubkey, slot_history::Slot};
-use solana_sdk::{signature::Signature, commitment_config::CommitmentLevel};
+use solana_sdk::{commitment_config::CommitmentLevel, signature::Signature};
 use std::fmt;
 
 #[derive(Clone, Debug, Serialize)]

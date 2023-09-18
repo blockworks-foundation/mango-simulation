@@ -16,12 +16,8 @@ pub fn initialize_result_writers(
                 File::create(transaction_save_file).await.unwrap(),
             );
             let mut tx_data = tx_data;
-            loop {
-                if let Ok(record) = tx_data.recv().await {
-                    writer.serialize(record).await.unwrap();
-                } else {
-                    break;
-                }
+            while let Ok(record) = tx_data.recv().await {
+                writer.serialize(record).await.unwrap();
             }
             writer.flush().await.unwrap();
         });
@@ -34,12 +30,8 @@ pub fn initialize_result_writers(
                 File::create(block_data_save_file).await.unwrap(),
             );
             let mut block_data = block_data;
-            loop {
-                if let Ok(record) = block_data.recv().await {
-                    writer.serialize(record).await.unwrap();
-                } else {
-                    break;
-                }
+            while let Ok(record) = block_data.recv().await {
+                writer.serialize(record).await.unwrap();
             }
             writer.flush().await.unwrap();
         });
