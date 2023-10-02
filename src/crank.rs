@@ -7,6 +7,7 @@ use crate::{
     tpu_manager::TpuManager,
 };
 
+use iter_tools::Itertools;
 use mango_feeds_connector::{
     account_write_filter::{self, AccountWriteRoute},
     metrics, websocket_source, FilterConfig, MetricsConfig, SnapshotSourceConfig, SourceConfig,
@@ -60,13 +61,13 @@ pub fn start(
     let group_pk = Pubkey::from_str(&group.public_key).unwrap();
     let cache_pk = Pubkey::from_str(&group.cache_key).unwrap();
     let mango_program_id = Pubkey::from_str(&group.mango_program_id).unwrap();
+    let accounts = group
+        .perp_markets
+        .iter()
+        .map(|m| m.events_key.clone())
+        .collect_vec();
     let filter_config = FilterConfig {
-        program_ids: vec![group.mango_program_id.clone()],
-        account_ids: group
-            .perp_markets
-            .iter()
-            .map(|m| m.events_key.clone())
-            .collect(),
+        entity_filter: mango_feeds_connector::EntityFilter::filter_by_account_ids(accounts.iter().map(|x| x.as_str()).collect()),
     };
 
     let (instruction_sender, instruction_receiver) = unbounded::<(Pubkey, Vec<Instruction>)>();
@@ -167,7 +168,6 @@ pub fn start(
                 grpc_sources: vec![],
                 snapshot: SnapshotSourceConfig {
                     rpc_http_url: config.rpc_url,
-                    program_id: config.program_id.to_string(),
                 },
                 rpc_ws_url: config.websocket_url,
             },

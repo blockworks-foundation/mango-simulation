@@ -10,7 +10,7 @@ use chrono::Utc;
 use dashmap::DashMap;
 use log::{debug, warn};
 use solana_client::{nonblocking::rpc_client::RpcClient, rpc_config::RpcBlockConfig};
-use solana_lite_rpc_core::notifications::NotificationMsg;
+use solana_lite_rpc_core::structures::notifications::NotificationMsg;
 use solana_sdk::{
     commitment_config::{CommitmentConfig, CommitmentLevel},
     signature::Signature,

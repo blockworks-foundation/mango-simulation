@@ -1,3 +1,7 @@
+use solana_lite_rpc_core::{stores::{data_cache::{DataCache, SlotCache}, tx_store::{TxStore, empty_tx_store}, block_information_store::BlockInformationStore, subscription_store::SubscriptionStore, cluster_info_store::ClusterInfo}, structures::{identity_stakes::IdentityStakes, notifications::NotificationMsg}};
+use solana_lite_rpc_services::{tpu_utils::tpu_connection_path::TpuConnectionPath, data_caching_service::DataCachingService};
+use solana_sdk::signer::Signer;
+
 use {
     log::info,
     mango_simulation::{
@@ -18,13 +22,9 @@ use {
     },
     solana_client::nonblocking::rpc_client::RpcClient as NbRpcClient,
     solana_lite_rpc_core::{
-        block_store::BlockStore,
-        notifications::NotificationMsg,
         quic_connection_utils::QuicConnectionParameters,
-        tx_store::{empty_tx_store, TxStore},
     },
     solana_lite_rpc_services::{
-        block_listenser::BlockListener,
         tpu_utils::tpu_service::{TpuService, TpuServiceConfig},
         transaction_replayer::TransactionReplayer,
         transaction_service::{TransactionService, TransactionServiceBuilder},
@@ -48,18 +48,13 @@ const METRICS_NAME: &str = "mango-bencher";
 async fn configure_transaction_service(
     rpc_client: Arc<NbRpcClient>,
     identity: Keypair,
-    block_store: BlockStore,
     tx_store: TxStore,
     notifier: UnboundedSender<NotificationMsg>,
 ) -> (TransactionService, JoinHandle<anyhow::Result<()>>) {
     let slot = rpc_client.get_slot().await.expect("GetSlot should work");
     let tpu_config = TpuServiceConfig {
         fanout_slots: 12,
-        number_of_leaders_to_cache: 1024,
-        clusterinfo_refresh_time: Duration::from_secs(60 * 60),
-        leader_schedule_update_frequency: Duration::from_secs(10),
         maximum_transaction_in_queue: 200_000,
-        maximum_number_of_errors: 10,
         quic_connection_params: QuicConnectionParameters {
             connection_timeout: Duration::from_secs(1),
             connection_retry_count: 10,
@@ -69,14 +64,39 @@ async fn configure_transaction_service(
             write_timeout: Duration::from_secs(1),
             number_of_transactions_per_unistream: 10,
         },
+        tpu_connection_path: TpuConnectionPath::QuicDirectPath,
+    };
+
+    let (subscriptions, cluster_endpoint_tasks) = create_json_rpc_polling_subscription(rpc_client.clone());
+    let EndpointStreaming {
+        blocks_notifier,
+        cluster_info_notifier,
+        slot_notifier,
+        vote_account_notifier,
+    } = subscriptions;
+    let finalized_block =
+        get_latest_block(blocks_notifier.resubscribe(), CommitmentConfig::finalized()).await;
+
+
+    let data_cache = DataCache {
+        block_information_store,
+        txs: tx_store,
+        tx_subs: SubscriptionStore::default(),
+        slot_cache: SlotCache::new(finalized_block.slot),
+        identity_stakes: IdentityStakes::new(identity.pubkey()),
+        cluster_info: ClusterInfo::default(),
+    };
+
+    let lata_cache_service = DataCachingService {
+        data_cache: data_cache.clone(),
+        clean_duration: Duration::from_secs(120),
     };
 
     let tpu_service = TpuService::new(
         tpu_config,
         Arc::new(identity),
         slot,
-        rpc_client.clone(),
-        tx_store.clone(),
+        data_cache,
     )
     .await
     .expect("Should be able to create TPU");
@@ -92,7 +112,6 @@ async fn configure_transaction_service(
     let builder = TransactionServiceBuilder::new(
         tx_sender,
         replayer,
-        block_listenser,
         tpu_service,
         1_000_000,
     );
@@ -157,9 +176,6 @@ pub async fn main() -> anyhow::Result<()> {
     ));
 
     let tx_store = empty_tx_store();
-    let block_store = BlockStore::new(&nb_rpc_client)
-        .await
-        .expect("Blockstore should be created");
 
     let (notif_sx, notif_rx) = unbounded_channel();
     let (transaction_service, tx_service_jh) = configure_transaction_service(
