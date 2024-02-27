@@ -46,11 +46,18 @@ pub async fn process_blocks(
 
     if let Some(transactions) = &block.transactions {
         let nb_transactions = transactions.len();
-        let mut cu_consumed: u64 = 0;
+        let mut mm_cu_consumed: u64 = 0;
+        let mut total_cu_consumed: u64 = 0;
         for solana_transaction_status::EncodedTransactionWithStatusMeta {
             transaction, meta, ..
         } in transactions
         {
+            let tx_cu_consumed =
+                meta.as_ref()
+                    .map_or(0, |meta| match meta.compute_units_consumed {
+                        OptionSerializer::Some(cu_consumed) => cu_consumed,
+                        _ => 0,
+                    });
             let transaction = match transaction.decode() {
                 Some(tx) => tx,
                 None => {
@@ -58,21 +65,14 @@ pub async fn process_blocks(
                 }
             };
             for signature in &transaction.signatures {
-                let transaction_record_op = {
-                    let rec = transaction_map.get(signature);
-                    rec.map(|x| x.clone())
-                };
+                let transaction_record_op: Option<(TransactionSendRecord, Instant)> =
+                    transaction_map.remove(signature);
                 // add CU in counter
-                if let Some(meta) = &meta {
-                    if let solana_transaction_status::option_serializer::OptionSerializer::Some(x) =
-                        meta.compute_units_consumed
-                    {
-                        cu_consumed = cu_consumed.saturating_add(x);
-                    }
-                }
+                total_cu_consumed = total_cu_consumed.saturating_add(tx_cu_consumed);
                 if let Some(transaction_record) = transaction_record_op {
                     let transaction_record = transaction_record.0;
                     mm_transaction_count += 1;
+                    mm_cu_consumed = mm_cu_consumed.saturating_add(tx_cu_consumed);
 
                     match tx_confirm_records.send(TransactionConfirmRecord {
                         signature: transaction_record.signature.to_string(),
@@ -105,8 +105,6 @@ pub async fn process_blocks(
                         }
                     }
                 }
-
-                transaction_map.remove(signature);
             }
         }
         // push block data
@@ -122,8 +120,8 @@ pub async fn process_blocks(
                 },
                 number_of_mango_simulation_txs: mm_transaction_count,
                 total_transactions: nb_transactions as u64,
-                cu_consumed: 0,
-                cu_consumed_by_mango_simulations: cu_consumed,
+                cu_consumed: total_cu_consumed,
+                cu_consumed_by_mango_simulations: mm_cu_consumed,
                 commitment,
             });
         }
