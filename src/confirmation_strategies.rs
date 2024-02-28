@@ -17,7 +17,8 @@ use solana_sdk::{
     slot_history::Slot,
 };
 use solana_transaction_status::{
-    RewardType, TransactionDetails, UiConfirmedBlock, UiTransactionEncoding,
+    option_serializer::OptionSerializer, RewardType, TransactionDetails, UiConfirmedBlock,
+    UiTransactionEncoding,
 };
 
 use crate::states::{BlockData, TransactionConfirmRecord, TransactionSendRecord};
@@ -65,12 +66,9 @@ pub async fn process_blocks(
                 }
             };
             for signature in &transaction.signatures {
-                let transaction_record_op: Option<(TransactionSendRecord, Instant)> =
-                    transaction_map.remove(signature);
                 // add CU in counter
                 total_cu_consumed = total_cu_consumed.saturating_add(tx_cu_consumed);
-                if let Some(transaction_record) = transaction_record_op {
-                    let transaction_record = transaction_record.0;
+                if let Some((_, (transaction_record, _))) = transaction_map.remove(signature) {
                     mm_transaction_count += 1;
                     mm_cu_consumed = mm_cu_consumed.saturating_add(tx_cu_consumed);
 
