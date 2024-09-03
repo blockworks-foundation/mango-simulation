@@ -40,8 +40,9 @@ pub fn create_ask_bid_transaction(
     prioritization_fee: u64,
 ) -> Transaction {
     let mango_account_signer_pk = to_sp_pk(&mango_account_signer.pubkey());
-    let offset = rand::random::<i8>() as i64;
-    let spread = rand::random::<u8>() as i64;
+    let price = 100;
+    let offset = rand::random::<i8>() as i64 % 20;
+    let spread = rand::random::<u8>() as i64 % 10;
     debug!(
         "price:{:?} price_quote_lots:{:?} order_base_lots:{:?} offset:{:?} spread:{:?}",
         c.price, c.price_quote_lots, c.order_base_lots, offset, spread
@@ -82,7 +83,7 @@ pub fn create_ask_bid_transaction(
             None,
             &[],
             Side::Bid,
-            c.price_quote_lots + offset - spread,
+            price + offset - spread,
             c.order_base_lots,
             i64::MAX,
             Utc::now().timestamp_micros() as u64,
@@ -110,7 +111,7 @@ pub fn create_ask_bid_transaction(
             None,
             &[],
             Side::Ask,
-            c.price_quote_lots + offset + spread,
+            price + offset + spread,
             c.order_base_lots,
             i64::MAX,
             Utc::now().timestamp_micros() as u64,
